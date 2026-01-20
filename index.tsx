@@ -70,7 +70,7 @@ const geminiService = {
       const ai = new GoogleGenAI({ apiKey });
       const res = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Gere uma dica de segurança curta (máximo 12 palavras) para o motorista ${driver} indo para ${dest}. Use português do Brasil.`
+        contents: `Gere uma dica de segurança curta (máximo 12 palavras) para o motorista ${driver} saindo para ${dest}. Use português do Brasil.`
       });
       return res.text;
     } catch { return null; }
@@ -100,58 +100,54 @@ const TripForm = ({ refs, trips, onSave }: any) => {
   }, [f.motorista, f.destino]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-500">
-      <div className="bg-rose-600 p-8 rounded-[40px] text-white text-center shadow-2xl shadow-rose-950/20">
-        <h2 className="font-black italic text-2xl uppercase tracking-tighter">Registrar Saída</h2>
-        <p className="text-[10px] font-bold text-rose-200 uppercase tracking-[0.3em] mt-1">Check-out de Veículo</p>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+      <div className="bg-rose-600 p-6 rounded-[32px] text-white text-center shadow-lg">
+        <h2 className="font-black italic text-xl uppercase italic">Registrar Saída</h2>
+        <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest mt-0.5">Check-out Operacional</p>
       </div>
       
-      <div className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-[40px] border border-slate-800 space-y-5 shadow-2xl">
+      <div className="bg-slate-900/40 p-6 rounded-[32px] border border-slate-800 space-y-4 shadow-xl">
         <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Veículo</label>
-            <select value={f.veiculo} onChange={e => setF({...f, veiculo: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-2 focus:ring-rose-500 outline-none appearance-none">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Veículo</label>
+            <select value={f.veiculo} onChange={e => setF({...f, veiculo: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-1 focus:ring-rose-500 outline-none appearance-none">
                 <option value="">Selecione...</option>
                 {refs.veiculos.map((v:string) => <option key={v} value={v}>{v}</option>)}
             </select>
         </div>
         
         <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Motorista</label>
-            <select value={f.motorista} onChange={e => setF({...f, motorista: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-2 focus:ring-rose-500 outline-none appearance-none">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Motorista</label>
+            <select value={f.motorista} onChange={e => setF({...f, motorista: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-1 focus:ring-rose-500 outline-none appearance-none">
                 <option value="">Selecione...</option>
                 {refs.motoristas.map((m:string) => <option key={m} value={m}>{m}</option>)}
             </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">KM Saída</label>
-                <input type="number" value={f.kmSaida} onChange={e => setF({...f, kmSaida: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-2 focus:ring-rose-500 outline-none" />
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">KM Saída</label>
+                <input type="number" value={f.kmSaida} onChange={e => setF({...f, kmSaida: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-1 focus:ring-rose-500 outline-none" />
             </div>
-            <div className="space-y-1">
-                <label className="text-[10px] font-black text-rose-400/50 uppercase tracking-widest ml-2">Anterior</label>
-                <div className="w-full p-4 bg-rose-500/10 rounded-2xl border-none font-black text-sm text-rose-400">{lastKm}</div>
+            <div className="space-y-1 text-right">
+                <label className="text-[9px] font-black text-rose-400/50 uppercase tracking-widest mr-1">Anterior</label>
+                <div className="w-full p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10 font-black text-sm text-rose-400 text-center">{lastKm}</div>
             </div>
         </div>
 
         <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Destino</label>
-            <input type="text" value={f.destino} onChange={e => setF({...f, destino: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Ex: Unidade 2" />
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Destino</label>
+            <input type="text" value={f.destino} onChange={e => setF({...f, destino: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Ex: Unidade Industrial" />
         </div>
 
         <div className="space-y-1">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Segurança Responsável</label>
-            <select value={f.seguranca} onChange={e => setF({...f, seguranca: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-2 focus:ring-rose-500 outline-none appearance-none">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Segurança</label>
+            <select value={f.seguranca} onChange={e => setF({...f, seguranca: e.target.value})} className="w-full p-4 bg-slate-800 rounded-2xl border-none font-bold text-sm text-white focus:ring-1 focus:ring-rose-500 outline-none appearance-none">
                 <option value="">Selecione...</option>
                 {refs.segurancas.map((s:string) => <option key={s} value={s}>{s}</option>)}
             </select>
         </div>
 
-        {tip && (
-            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-[11px] font-bold text-amber-400 italic">
-               💡 {tip}
-            </div>
-        )}
+        {tip && <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl text-[10px] font-bold text-amber-400/80 italic">💡 {tip}</div>}
 
         <button 
           disabled={loading || !f.veiculo || !f.kmSaida}
@@ -160,9 +156,9 @@ const TripForm = ({ refs, trips, onSave }: any) => {
             await onSave(f);
             setLoading(false);
           }}
-          className="w-full py-5 bg-rose-500 hover:bg-rose-600 text-white rounded-[28px] font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-950/40 active:scale-95 transition-all disabled:opacity-30 mt-4"
+          className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-30 mt-2"
         >
-          {loading ? "Processando..." : "Confirmar Saída"}
+          {loading ? "Salvando..." : "Confirmar Saída"}
         </button>
       </div>
     </div>
@@ -176,47 +172,25 @@ const ActiveTrips = ({ trips, onFinish }: any) => {
   const [loading, setLoading] = useState(false);
 
   if(active.length === 0) return (
-    <div className="flex flex-col items-center justify-center p-20 space-y-4">
-        <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-600">
-            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-        </div>
-        <p className="text-slate-500 font-black uppercase tracking-widest text-xs italic">Nenhum Veículo em Rota</p>
+    <div className="flex flex-col items-center justify-center py-20 opacity-30 italic">
+        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Pátio Limpo</p>
     </div>
   );
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
-      <div className="flex items-center space-x-2 px-2">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Veículos em Operação ({active.length})</h2>
-      </div>
-      
+    <div className="space-y-4 animate-in fade-in">
+      <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-4">Em Rota ({active.length})</h2>
       {active.map((t: any) => (
-        <div key={t.id} className="bg-slate-900/80 border border-slate-800 p-6 rounded-[40px] shadow-xl relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="font-black italic text-xl text-white tracking-tighter uppercase">{t.veiculo}</h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{t.motorista}</p>
-            </div>
-            <div className="bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/20">
-              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">EM ROTA</span>
-            </div>
+        <div key={t.id} className="bg-slate-900/60 border border-slate-800 p-5 rounded-[28px] shadow-lg">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-black italic text-lg text-white tracking-tighter uppercase">{t.veiculo}</h3>
+            <span className="text-[8px] font-black text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full uppercase italic border border-emerald-400/20">Em Rota</span>
           </div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase mb-4 truncate">{t.motorista} → {t.destino}</p>
           
-          <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 grid grid-cols-2 gap-4">
-              <div>
-                  <p className="text-[8px] font-black text-slate-500 uppercase">Destino</p>
-                  <p className="text-xs font-bold text-slate-300 truncate">{t.destino}</p>
-              </div>
-              <div>
-                  <p className="text-[8px] font-black text-slate-500 uppercase">KM Saída</p>
-                  <p className="text-xs font-bold text-slate-300">{t.kmSaida} km</p>
-              </div>
-          </div>
-
           {selected === t.id ? (
-            <div className="space-y-3 pt-2 animate-in slide-in-from-top-4">
-              <input type="number" placeholder="KM de Chegada" value={km} onChange={e => setKm(e.target.value)} className="w-full p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl font-black text-sm text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500" />
+            <div className="space-y-3 pt-2 animate-in slide-in-from-top-2">
+              <input type="number" placeholder="KM de Chegada" value={km} onChange={e => setKm(e.target.value)} className="w-full p-4 bg-slate-800 rounded-xl border-none font-bold text-sm text-white focus:ring-1 focus:ring-emerald-500" />
               <div className="flex space-x-2">
                 <button 
                     disabled={loading || !km}
@@ -225,15 +199,15 @@ const ActiveTrips = ({ trips, onFinish }: any) => {
                         await onFinish(t.id, Number(km));
                         setLoading(false);
                     }} 
-                    className="flex-1 py-5 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-950/20"
+                    className="flex-1 py-4 bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest"
                 >
-                    {loading ? "..." : "Confirmar Entrada"}
+                    {loading ? "..." : "Confirmar"}
                 </button>
-                <button onClick={() => setSelected(null)} className="px-6 py-5 bg-slate-800 text-slate-400 rounded-2xl font-black">X</button>
+                <button onClick={() => setSelected(null)} className="px-5 py-4 bg-slate-800 text-slate-500 rounded-xl font-black">X</button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setSelected(t.id)} className="w-full py-4 border-2 border-emerald-500/30 text-emerald-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-emerald-500/5 transition-all">Registrar Entrada</button>
+            <button onClick={() => setSelected(t.id)} className="w-full py-3 border border-emerald-500/30 text-emerald-400 rounded-xl font-black text-[9px] uppercase tracking-[0.2em] hover:bg-emerald-500/5 transition-all">Registrar Entrada</button>
           )}
         </div>
       ))}
@@ -252,7 +226,8 @@ const App = () => {
   const load = async () => {
     try {
       const [t, r] = await Promise.all([sheetsService.getTrips(), sheetsService.getRefs()]);
-      setTrips(t); setRefs(r);
+      setTrips(t); 
+      setRefs(r);
     } catch (e) { console.error(e); }
   };
 
@@ -265,108 +240,108 @@ const App = () => {
       init();
   }, []);
 
+  const refreshAfterAction = async () => {
+      // Pequeno delay para dar tempo do GAS processar antes do GET
+      setTimeout(async () => {
+          await load();
+      }, 800);
+  };
+
   if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center space-y-6">
-        <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin shadow-2xl shadow-rose-500/20"></div>
-        <p className="font-black text-slate-500 uppercase tracking-[0.5em] text-[10px] animate-pulse italic">Frota Pro II Sincronizando</p>
+    <div className="h-screen flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="font-black text-slate-600 uppercase tracking-[0.4em] text-[9px] italic">Frota Pro II</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-[#020617] flex flex-col shadow-2xl relative overflow-x-hidden selection:bg-rose-500/30">
+    <div className="min-h-screen max-w-md mx-auto bg-[#020617] flex flex-col shadow-2xl relative overflow-x-hidden">
       {view === 'DASH' ? (
-        <div className="flex-1 flex flex-col animate-in fade-in duration-700 overflow-y-auto hide-scrollbar">
+        <div className="flex-1 flex flex-col animate-in fade-in duration-500 overflow-y-auto hide-scrollbar">
           
-          {/* HEADER COM IMAGEM */}
-          <div className="relative h-80 w-full shrink-0 overflow-hidden">
+          <div className="relative h-64 w-full shrink-0">
             <img 
-                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1000&auto=format&fit=crop" 
-                className="absolute inset-0 w-full h-full object-cover scale-110 opacity-40 grayscale hover:grayscale-0 transition-all duration-1000"
-                alt="Truck header"
+                src="https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?q=80&w=1000&auto=format&fit=crop" 
+                className="absolute inset-0 w-full h-full object-cover grayscale opacity-30"
+                alt="Fleet header"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
             
-            <div className="relative z-10 h-full flex flex-col items-center justify-center px-8 text-center pt-10">
-                <div className="bg-rose-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-rose-500/30 mb-4 animate-bounce">
-                    <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.2em]">Frota Operacional</span>
+            <div className="relative z-10 h-full flex flex-col items-center justify-center px-8 text-center pt-8">
+                <div className="bg-rose-500/10 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/20 mb-3">
+                    <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Painel Operacional</span>
                 </div>
-                <h1 className="text-6xl font-black italic tracking-tighter text-white leading-none">FROTA<br/><span className="text-rose-500 drop-shadow-[0_0_25px_rgba(244,63,94,0.4)]">PRO II</span></h1>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mt-6 italic opacity-70">Sistema Gestão Logística</p>
+                <h1 className="text-5xl font-black italic tracking-tighter text-white leading-none">FROTA<br/><span className="text-rose-500 drop-shadow-lg">PRO II</span></h1>
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] mt-5 italic">Gestão Integrada</p>
             </div>
           </div>
 
-          <div className="px-8 pb-32 space-y-6 -mt-10 relative z-20">
+          <div className="px-8 pb-32 space-y-5 -mt-6 relative z-20">
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => setView('OUT')} className="aspect-square glass rounded-[48px] flex flex-col items-center justify-center p-6 active:scale-95 transition-all group overflow-hidden relative">
-                <div className="absolute inset-0 bg-rose-500/5 group-hover:bg-rose-500/10 transition-colors"></div>
-                <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mb-4 border border-rose-500/20 group-hover:rotate-12 transition-transform">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              <button onClick={() => setView('OUT')} className="aspect-square glass rounded-[40px] flex flex-col items-center justify-center p-5 btn-active transition-all group overflow-hidden relative">
+                <div className="w-14 h-14 bg-rose-500/10 text-rose-500 rounded-2xl flex items-center justify-center mb-3 border border-rose-500/10">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-rose-400 transition-colors">Saída</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Saída</span>
               </button>
               
-              <button onClick={() => setView('IN')} className="aspect-square glass rounded-[48px] flex flex-col items-center justify-center p-6 active:scale-95 transition-all group overflow-hidden relative">
-                <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-colors"></div>
-                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center mb-4 border border-emerald-500/20 group-hover:-rotate-12 transition-transform">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              <button onClick={() => setView('IN')} className="aspect-square glass rounded-[40px] flex flex-col items-center justify-center p-5 btn-active transition-all group overflow-hidden relative">
+                <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mb-3 border border-emerald-500/10">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-emerald-400 transition-colors">Entrada</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entrada</span>
               </button>
             </div>
 
-            <button onClick={() => setView('HISTORY')} className="w-full p-8 glass rounded-[40px] flex items-center justify-between group active:scale-[0.98] transition-all relative overflow-hidden">
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors"></div>
-              <div className="flex items-center space-x-5 relative z-10">
-                <div className="w-12 h-12 bg-slate-800 text-slate-500 rounded-2xl flex items-center justify-center group-hover:text-sky-400 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-                <div className="text-left">
-                    <span className="block text-[11px] font-black uppercase tracking-widest text-slate-300">Histórico Completo</span>
-                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Registros de Movimentação</span>
-                </div>
+            <button onClick={() => setView('HISTORY')} className="w-full p-6 glass rounded-[32px] flex items-center justify-between group btn-active transition-all relative">
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-slate-800 text-slate-400 rounded-xl flex items-center justify-center"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Histórico Completo</span>
               </div>
-              <svg className="w-5 h-5 text-slate-700 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M9 5l7 7-7 7" /></svg>
+              <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M9 5l7 7-7 7" /></svg>
             </button>
             
-            <footer className="text-center pt-8 opacity-20"><span className="text-[10px] font-black text-slate-400 uppercase tracking-[1em] italic">ULBACH OPERATIONAL</span></footer>
+            <footer className="text-center pt-8 opacity-20"><span className="text-[8px] font-black text-slate-400 uppercase tracking-[1em] italic">ULBACH OPERATIONAL</span></footer>
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col bg-[#020617] animate-in slide-in-from-right duration-500 overflow-hidden">
-          <nav className="p-8 flex items-center space-x-6 bg-slate-900/50 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-50">
-            <button onClick={() => setView('DASH')} className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 hover:text-white transition-colors shadow-lg active:scale-90"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg></button>
-            <h2 className="text-sm font-black uppercase tracking-[0.3em] text-slate-200 italic">{view === 'OUT' ? 'Saída' : view === 'IN' ? 'Entrada' : 'Histórico'}</h2>
+        <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden">
+          <nav className="p-6 flex items-center space-x-5 bg-slate-900/40 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-50">
+            <button onClick={() => setView('DASH')} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg></button>
+            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-200 italic">{view === 'OUT' ? 'Saída' : view === 'IN' ? 'Entrada' : 'Histórico'}</h2>
           </nav>
           
-          <div className="flex-1 p-8 overflow-y-auto hide-scrollbar">
+          <div className="flex-1 p-6 overflow-y-auto hide-scrollbar">
             {view === 'OUT' && <TripForm refs={refs} trips={trips} onSave={async (d:any)=>{ 
                 await sheetsService.saveTrip(d); 
-                await load(); 
+                await refreshAfterAction();
                 setView('DASH'); 
             }} />}
             
             {view === 'IN' && <ActiveTrips trips={trips} onFinish={async (id:string, km:number)=>{ 
                 await sheetsService.finishTrip(id, km, {}); 
-                await load(); 
+                await refreshAfterAction();
                 setView('DASH'); 
             }} />}
             
             {view === 'HISTORY' && (
-              <div className="space-y-4 animate-in fade-in pb-10">
-                <div className="flex justify-between items-center mb-6 px-2">
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Histórico Recente</h3>
-                    <button onClick={load} className="text-rose-500 font-black text-[9px] uppercase tracking-widest">Atualizar</button>
+              <div className="space-y-3 animate-in fade-in pb-10">
+                <div className="flex justify-between items-center mb-5 px-1">
+                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">Registros de Movimentação</h3>
+                    <button onClick={load} className="text-rose-500 font-black text-[8px] uppercase tracking-widest">Sincronizar</button>
                 </div>
                 {trips
                     .filter(t => t.status === 'Concluído')
                     .sort((a, b) => new Date(b.dataRetorno || 0).getTime() - new Date(a.dataRetorno || 0).getTime())
                     .map(t => (
-                  <div key={t.id} className="bg-slate-900/40 border border-slate-800 p-6 rounded-[32px] flex justify-between items-center shadow-lg group hover:border-slate-700 transition-colors">
-                    <div className="space-y-1">
-                      <p className="font-black italic text-white text-base uppercase tracking-tighter">{t.veiculo}</p>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t.motorista} • {t.kmRodado}km</p>
+                  <div key={t.id} className="bg-slate-900/30 border border-slate-800/50 p-5 rounded-[24px] flex justify-between items-center shadow-md">
+                    <div className="space-y-0.5">
+                      <p className="font-black italic text-white text-sm uppercase tracking-tighter">{t.veiculo}</p>
+                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{t.motorista} • {t.kmRodado}km</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-rose-500 uppercase italic">{new Date(t.dataRetorno!).toLocaleDateString()}</p>
-                      <p className="text-[8px] font-bold text-slate-600 uppercase mt-0.5">{new Date(t.dataRetorno!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                      <p className="text-[9px] font-black text-rose-500 uppercase italic leading-none">{new Date(t.dataRetorno!).toLocaleDateString()}</p>
+                      <p className="text-[7px] font-bold text-slate-600 uppercase mt-1">{new Date(t.dataRetorno!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
                   </div>
                 ))}

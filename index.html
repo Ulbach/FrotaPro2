@@ -14,16 +14,18 @@
             margin: 0; 
             padding: 0; 
             color: #f8fafc;
+            overflow-x: hidden;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Efeito de Vidro */
         .glass {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
+        
+        .btn-active:active { transform: scale(0.96); }
     </style>
     <script type="importmap">
 {
