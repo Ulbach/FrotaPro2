@@ -6,16 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Registrar Saída — Frota Pro</title>
 <style>
-  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --accent:#16a34a; --shadow:0 8px 20px rgba(0,0,0,.15)}
-  body{margin:0;background:var(--bg);font-family:system-ui}
-  .phone{width:420px;max-width:100%;margin:20px auto;background:#fff;border-radius:22px;box-shadow:var(--shadow);min-height:90vh}
+  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --accent:#16a34a; --shadow:0 8px 20px rgba(2,6,23,.10)}
+  body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:#0b1020}
+  .phone{width:420px;max-width:100%;margin:20px auto;background:#fff;border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.15);min-height:90vh;overflow:hidden}
   .wrap{padding:18px}
   .top{display:flex;align-items:center;gap:10px}
   .back{width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;display:grid;place-items:center;cursor:pointer;background:#fff}
   h1{margin:0;font-size:20px;color:#0f172a}
   .card{margin-top:14px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
   label{display:block;margin:12px 0 6px;font-weight:700;color:#0b1020}
-  select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px}
+  select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
   .row{display:flex;gap:12px}
   .row > div{flex:1}
   .btn{margin-top:18px;width:100%;padding:12px;border:0;border-radius:12px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer}
@@ -38,70 +38,101 @@
     <div class="card">
       <div class="row">
         <div>
-          <label>Veículo</label>
+          <label for="veiculo">Veículo</label>
           <select id="veiculo"><option>Carregando...</option></select>
         </div>
         <div>
-          <label>Motorista</label>
+          <label for="motorista">Motorista</label>
           <select id="motorista"><option>Carregando...</option></select>
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>Segurança</label>
+          <label for="seguranca">Segurança</label>
           <select id="seguranca"><option>Carregando...</option></select>
         </div>
         <div>
-          <label>Km Saída</label>
-          <input id="kmSaida" type="number" min="0" step="1" placeholder="Ex.: 15700">
+          <label for="kmSaida">Km Saída</label>
+          <input id="kmSaida" type="number" min="0" step="1" placeholder="Ex.: 15700" />
         </div>
       </div>
 
-      <label>Destino (opcional)</label>
-      <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y">
+      <label for="destino">Destino (opcional)</label>
+      <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y" />
 
       <button id="btnEnviar" class="btn">Gravar Saída</button>
-      <div class="muted">Listas carregadas da aba <b>Listagem2</b>. Data/hora gravada automaticamente.</div>
+      <div class="muted">Listas vêm da aba <b>Listagem2</b>. Data/hora é registrada automaticamente no formato <i>dd/MM/yyyy HH:mm:ss</i>.</div>
       <div id="msg" class="msg"></div>
     </div>
   </div>
 </div>
 
-<!-- Helpers -->
 <script>
+  // ===== CONFIG =====
   const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
-  async function apiGet(route){ const r = await fetch(`${API_URL}?route=${route}&t=${Date.now()}`); if(!r.ok) throw new Error('GET '+r.status); return r.json(); }
-  async function apiPost(route,data){ const r = await fetch(`${API_URL}?route=${route}&t=${Date.now()}`, {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)}); const txt=await r.text().catch(()=> ''); let j={}; try{j=JSON.parse(txt);}catch{} if(!r.ok||j?.ok===false) throw new Error(j?.error||txt); return j; }
-  function setMsg(text,ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
-  function fillSelect(el,arr,ph){ el.innerHTML=''; const o=document.createElement('option'); o.value=''; o.textContent=ph||'Selecione...'; el.appendChild(o); (arr||[]).forEach(v=>{ const op=document.createElement('option'); op.value=v; op.textContent=v; el.appendChild(op); }); }
-</script>
 
-<!-- Página -->
-<script>
+  // ===== HELPERS HTTP =====
+  async function apiGet(route){
+    const res = await fetch(`${API_URL}?route=${encodeURIComponent(route)}&t=${Date.now()}`, { method:'GET' });
+    if(!res.ok) throw new Error('GET '+res.status);
+    return res.json();
+  }
+  async function apiPost(route, data){
+    const res = await fetch(`${API_URL}?route=${encodeURIComponent(route)}&t=${Date.now()}`, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // evita preflight CORS
+      body: JSON.stringify(data||{})
+    });
+    const txt = await res.text().catch(()=> '');
+    let json = {}; try{ json = JSON.parse(txt); }catch(e){}
+    if(!res.ok || json?.ok === false) throw new Error(json?.error || txt || 'Erro no POST');
+    return json;
+  }
+
+  // ===== UI HELPERS =====
+  function setMsg(text, ok){ const el = document.getElementById('msg'); el.textContent = text || ''; el.className='msg '+(ok?'ok':'err'); }
+  function fillSelect(el, list, placeholder){
+    el.innerHTML = '';
+    const opt0 = document.createElement('option');
+    opt0.value = ''; opt0.textContent = placeholder; el.appendChild(opt0);
+    (list||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+  }
+
+  // ===== PAGE LOGIC =====
   async function loadLists(){
     try{
       const L = await apiGet('lists');
       fillSelect(document.getElementById('veiculo'),   L.veiculos,   'Selecione o veículo');
       fillSelect(document.getElementById('motorista'), L.motoristas, 'Selecione o motorista');
       fillSelect(document.getElementById('seguranca'), L.segurancas, 'Selecione o segurança');
-    }catch(e){ setMsg('Erro ao carregar listas: '+e.message,false); }
+    }catch(e){ setMsg('Erro ao carregar listas: '+e.message, false); }
   }
+
   async function submit(){
     const veiculo   = (document.getElementById('veiculo').value||'').trim();
     const motorista = (document.getElementById('motorista').value||'').trim();
     const seguranca = (document.getElementById('seguranca').value||'').trim();
     const kmSaida   = Number((document.getElementById('kmSaida').value||'').trim());
     const destino   = (document.getElementById('destino').value||'').trim();
-    if(!veiculo || !motorista || !seguranca || !kmSaida){ setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return; }
-    const btn = document.getElementById('btnEnviar'); btn.disabled = true; setMsg('Enviando...', true);
+
+    if(!veiculo || !motorista || !seguranca || !kmSaida){
+      setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return;
+    }
+
+    const btn = document.getElementById('btnEnviar');
+    btn.disabled = true; setMsg('Enviando...', true);
     try{
       const r = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
       setMsg(r.message + (r.timestamp ? ` — ${r.timestamp}` : ''), true);
       setTimeout(()=> location.href = './', 1200);
-    }catch(e){ setMsg('Erro: '+e.message, false); }
-    finally{ btn.disabled=false; }
+    }catch(e){
+      setMsg('Erro: ' + e.message, false);
+    }finally{
+      btn.disabled = false;
+    }
   }
+
   document.getElementById('btnEnviar').addEventListener('click', submit);
   window.addEventListener('load', loadLists);
 </script>
