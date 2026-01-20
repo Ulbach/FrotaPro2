@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Registrar Entrada — Frota Pro</title>
+<style>
+  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --accent:#16a34a; --shadow:0 8px 20px rgba(0,0,0,.15)}
+  body{margin:0;background:var(--bg);font-family:system-ui}
+  .phone{width:420px;max-width:100%;margin:20px auto;background:#fff;border-radius:22px;box-shadow:var(--shadow);min-height:90vh}
+  .wrap{padding:18px}
+  .top{display:flex;align-items:center;gap:10px}
+  .back{width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;display:grid;place-items:center;cursor:pointer;background:#fff}
+  h1{margin:0;font-size:20px;color:#0f172a}
+  .card{margin-top:14px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
+  label{display:block;margin:12px 0 6px;font-weight:700;color:#0b1020}
+  select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px}
+  .row{display:flex;gap:12px}
+  .row > div{flex:1}
+  .btn{margin-top:18px;width:100%;padding:12px;border:0;border-radius:12px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .muted{color:#64748b;font-size:12px;margin-top:8px}
+  .msg{margin-top:12px;font-weight:700}
+  .ok{color:#16a34a}.err{color:#dc2626}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="wrap">
+    <div class="top">
+      <div class="back" onclick="history.back()" title="Voltar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h1>Registrar Entrada</h1>
+    </div>
+
+    <div class="card">
+      <label>Veículo</label>
+      <select id="veiculo"><option>Carregando...</option></select>
+
+      <label>Km Retorno</label>
+      <input id="kmRetorno" type="number" min="0" step="1" placeholder="Ex.: 16020">
+
+      <button id="btnEnviar" class="btn">Gravar Entrada</button>
+      <div class="muted">Fecha a última saída “Em Curso” do veículo. Valida Km Retorno ≥ Km Saída.</div>
+      <div id="msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Helpers -->
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
+  async function apiGet(route){ const r = await fetch(`${API_URL}?route=${route}&t=${Date.now()}`); if(!r.ok) throw new Error('GET '+r.status); return r.json(); }
+  async function apiPost(route,data){ const r = await fetch(`${API_URL}?route=${route}&t=${Date.now()}`, {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)}); const txt=await r.text().catch(()=> ''); let j={}; try{j=JSON.parse(txt);}catch{} if(!r.ok||j?.ok===false) throw new Error(j?.error||txt); return j; }
+  function setMsg(text,ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
+  function fillSelect(el,arr,ph){ el.innerHTML=''; const o=document.createElement('option'); o.value=''; o.textContent=ph||'Selecione...'; el.appendChild(o); (arr||[]).forEach(v=>{ const op=document.createElement('option'); op.value=v; op.textContent=v; el.appendChild(op); }); }
+</script>
+
+<!-- Página -->
+<script>
+  async function loadVeiculos(){
+    try{
+      const L = await apiGet('lists');
+      fillSelect(document.getElementById('veiculo'), L.veiculos, 'Selecione o veículo');
+    }catch(e){ setMsg('Erro ao carregar veículos: '+e.message,false); }
+  }
+  async function submit(){
+    const veiculo   = (document.getElementById('veiculo').value||'').trim();
+    const kmRetorno = Number((document.getElementById('kmRetorno').value||'').trim());
+    if(!veiculo || !kmRetorno){ setMsg('Informe Veículo e Km Retorno.', false); return; }
+    const btn = document.getElementById('btnEnviar'); btn.disabled = true; setMsg('Enviando...', true);
+    try{
+      const r = await apiPost('entrada', { veiculo, kmRetorno });
+      setMsg(`${r.message} — Km Rodado: ${r.kmRodado} — Data: ${r.dataRetorno}`, true);
+      setTimeout(()=> location.href = './', 1500);
+    }catch(e){ setMsg('Erro: '+e.message, false); }
+    finally{ btn.disabled=false; }
+  }
+  document.getElementById('btnEnviar').addEventListener('click', submit);
+  window.addEventListener('load', loadVeiculos);
+</script>
+</body>
+</html>
