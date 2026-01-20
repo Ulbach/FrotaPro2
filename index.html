@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -12,9 +11,10 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:#0b1020;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
-  .phone{width:420px;max-width:100%;height:840px;max-height:94vh;margin:20px auto;background:linear-gradient(180deg,#f7f9fc 0%,#f3f6fb 100%);
+  .phone{width:420px;max-width:100%;min-height:90vh;margin:20px auto;background:linear-gradient(180deg,#f7f9fc 0%,#f3f6fb 100%);
     border-radius:28px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.25);overflow:hidden}
-  .scroll{height:100%;overflow:auto}
+  .scroll{min-height:100%;overflow:auto}
+
   /* Banner */
   .banner{position:relative;margin:18px;border-radius:24px;height:180px;overflow:hidden;box-shadow:var(--shadow);
     background:#101827 url('https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat}
@@ -38,7 +38,7 @@
   .txt{font-weight:800;color:#0b1020;text-align:left}
   .muted{color:#64748b}
 
-  /* Seção lista */
+  /* Lista */
   .section{padding:16px 18px 6px}
   .section h3{margin:12px 0 6px;color:#94a3b8;font-size:12px;letter-spacing:.18em;font-weight:800;display:flex;gap:10px;align-items:center}
   .list{display:grid;gap:12px;padding:0 18px 18px}
@@ -64,9 +64,6 @@
           <div style="margin-left:auto;display:flex;gap:8px">
             <div class="icon-btn" title="Atualizar" onclick="loadHome()">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M21 5v6h-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="icon-btn" title="Testar conexão" onclick="ping()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4" fill="#fff"/></svg>
             </div>
           </div>
         </div>
@@ -110,7 +107,28 @@
   </div>
 
 <script>
-  // Helpers
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // Cole aqui a URL do seu Web App (termina com /exec)
+  const API_URL = 'COLE_AQUI_SUA_URL_DO_WEB_APP';
+  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+  async function apiGet(route){
+    const res = await fetch(`${API_URL}?route=${encodeURIComponent(route)}`, { method:'GET' });
+    if(!res.ok) throw new Error('Falha na API (GET)');
+    return res.json();
+  }
+  async function apiPost(route, data){
+    // text/plain para evitar preflight CORS no GAS Web App
+    const res = await fetch(`${API_URL}?route=${encodeURIComponent(route)}`, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(data||{})
+    });
+    const json = await res.json();
+    if(!res.ok || json?.ok === false) throw new Error(json?.error || 'Falha na API (POST)');
+    return json;
+  }
+
   function fmt(v){ return (v||'').toString().trim(); }
   function renderRecentes(items){
     const wrap = document.getElementById('listaRecentes'); wrap.innerHTML = '';
@@ -135,54 +153,49 @@
     }
   }
 
-  // Ações
-  function openSaida(){
-    // (rápido) prompts — se quiser, faço um modal bonitão na próxima etapa.
+  function alertErr(e){
+    const msg = (e && e.message) ? e.message : String(e);
+    alert('Erro: ' + msg);
+    console.error(e);
+  }
+
+  async function loadHome(){
+    try{
+      const data = await apiGet('home');
+      document.getElementById('qtyVeiculos').textContent = data.totalVeiculos ?? 0;
+      document.getElementById('onlineText').textContent = data.online ? 'ONLINE' : 'OFFLINE';
+      const pill = document.getElementById('pillStatus');
+      pill.style.background = data.online ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)';
+      pill.style.color      = data.online ? '#10b981' : '#ef4444';
+      renderRecentes(data.recentes);
+    }catch(e){ alertErr(e); renderRecentes([]); }
+  }
+
+  async function openSaida(){
     const veiculo   = prompt('Veículo:') || '';
     const motorista = prompt('Motorista:') || '';
     const seguranca = prompt('Segurança:') || '';
     const kmSaida   = Number(prompt('Km Saída:') || 0);
     const destino   = prompt('Destino (opcional):') || '';
-
-    if(!veiculo || !motorista || !seguranca || !kmSaida){
-      alert('Preencha Veículo, Motorista, Segurança e Km Saída.'); return;
-    }
-    google.script.run
-      .withSuccessHandler(()=>{ alert('Saída registrada!'); loadHome(); })
-      .withFailureHandler(e=>alert('Erro: ' + e.message))
-      .submitSaida({ veiculo, motorista, seguranca, kmSaida, destino });
+    if(!veiculo || !motorista || !seguranca || !kmSaida){ alert('Preencha Veículo, Motorista, Segurança e Km Saída.'); return; }
+    try{
+      const res = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
+      alert(res.message + (res.timestamp ? `\nData/Hora: ${res.timestamp}`:''));
+      loadHome();
+    }catch(e){ alertErr(e); }
   }
 
-  function openEntrada(){
+  async function openEntrada(){
     const veiculo   = prompt('Veículo:') || '';
     const kmRetorno = Number(prompt('Km Retorno:') || 0);
     if(!veiculo || !kmRetorno){ alert('Informe Veículo e Km Retorno.'); return; }
-    google.script.run
-      .withSuccessHandler((res)=>{ alert(res.message + `\nKm Rodado: ${res.kmRodado}\nData Retorno: ${res.dataRetorno}`); loadHome(); })
-      .withFailureHandler(e=>alert('Erro: ' + e.message))
-      .submitEntrada({ veiculo, kmRetorno });
+    try{
+      const res = await apiPost('entrada', { veiculo, kmRetorno });
+      alert(res.message + `\nKm Rodado: ${res.kmRodado}\nData Retorno: ${res.dataRetorno}`);
+      loadHome();
+    }catch(e){ alertErr(e); }
   }
 
-  // Diagnóstico
-  function ping(){
-    try{ google.script.run.withSuccessHandler(alert).ping(); }
-    catch(e){ alert('Abra pela URL do Web App do Apps Script.'); }
-  }
-
-  // Home
-  function loadHome(){
-    const pill = document.getElementById('pillStatus');
-    google.script.run
-      .withSuccessHandler(data=>{
-        document.getElementById('qtyVeiculos').textContent = data.totalVeiculos ?? 0;
-        document.getElementById('onlineText').textContent = data.online ? 'ONLINE' : 'OFFLINE';
-        pill.style.background = data.online ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)';
-        pill.style.color      = data.online ? '#10b981' : '#ef4444';
-        renderRecentes(data.recentes);
-      })
-      .withFailureHandler(err=>{ console.error(err); alert('Falha ao carregar Home: ' + (err && err.message ? err.message : err)); })
-      .getHomeData();
-  }
   window.addEventListener('load', loadHome);
 </script>
 </body>
