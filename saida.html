@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Registrar Saída — Frota Pro</title>
 <style>
-  :root{
-    --bg:#f1f5f9; --card:#fff; --muted:#64748b; --text:#0b1020;
-    --accent:#16a34a; --danger:#dc2626; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12);
-  }
+  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --text:#0b1020; --accent:#16a34a; --danger:#dc2626; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12) }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
   .phone{width:420px;max-width:100%;min-height:90vh;margin:20px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
@@ -17,7 +14,8 @@
   .back{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;background:#fff}
   h1{margin:0;font-size:20px;color:#0f172a}
   .card{margin-top:14px;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
-  label{display:block;margin:12px 0 6px;font-weight:700;color:#0b1020}
+  .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
+  label{display:block;margin:12px 0 6px;font-weight:700}
   select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
   .field{margin-bottom:6px}
   .hint-danger{color:var(--danger);font-size:12px;margin-top:6px;display:none}
@@ -27,7 +25,8 @@
   .msg{margin-top:12px;font-weight:700}
   .ok{color:var(--accent)} .err{color:var(--danger)}
   .muted{color:var(--muted);font-size:12px;margin-top:8px}
-  .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
+  .row-inline{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .row-inline label{margin:0;font-weight:600}
 </style>
 </head>
 <body>
@@ -43,28 +42,36 @@
     <div class="card">
       <div id="warnCurso" class="banner-warn">VEÍCULO EM CURSO — conclua a ENTRADA antes de registrar nova SAÍDA.</div>
 
-      <!-- Uma linha por campo, na ordem pedida -->
+      <!-- 1) Veículo -->
       <div class="field">
         <label for="veiculo">Veículo</label>
-        <select id="veiculo"><option value="">Selecione o veículo</option></select>
+        <select id="veiculo"><option value="">Carregando...</option></select>
+        <div class="row-inline">
+          <input type="checkbox" id="ckShowBusy" />
+          <label for="ckShowBusy">Mostrar veículos em curso (somente leitura)</label>
+        </div>
       </div>
 
+      <!-- 2) Motorista -->
       <div class="field">
         <label for="motorista">Motorista</label>
         <select id="motorista"><option value="">Selecione o motorista</option></select>
       </div>
 
+      <!-- 3) Km Saída -->
       <div class="field">
         <label for="kmSaida">Km Saída</label>
         <input id="kmSaida" type="number" min="0" step="1" placeholder="Ex.: 15700" />
         <div id="kmAtualHint" class="hint-danger"></div>
       </div>
 
+      <!-- 4) Destino -->
       <div class="field">
         <label for="destino">Destino (opcional)</label>
         <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y" />
       </div>
 
+      <!-- 5) Segurança -->
       <div class="field">
         <label for="seguranca">Segurança</label>
         <select id="seguranca"><option value="">Selecione o segurança</option></select>
@@ -72,7 +79,10 @@
 
       <button id="btnEnviar" class="btn">Gravar Saída</button>
 
-      <div class="muted">Listas vêm da aba <b>Listagem2</b>. Data/hora é registrada automaticamente no formato <i>dd/MM/yyyy HH:mm:ss</i>.</div>
+      <div class="muted">
+        Listas vêm da aba <b>Listagem2</b>. Data/hora é registrada automaticamente no formato
+        <i>dd/MM/yyyy HH:mm:ss</i>.
+      </div>
       <div id="msg" class="msg"></div>
     </div>
   </div>
@@ -80,17 +90,20 @@
 
 <script>
   // ===== CONFIG =====
-  const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
+  const API_URL =
+    'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
 
   // ===== STATE =====
   let KM_ATUAL = 0;
   let EM_CURSO = false;
+  let DISPONIVEIS = [];
+  let OCUPADOS = [];
 
   // ===== HTTP =====
   async function apiGet(route, params = {}){
     const usp = new URLSearchParams({ route, t: Date.now(), ...params });
     const res = await fetch(`${API_URL}?${usp.toString()}`, { method:'GET' });
-    if(!res.ok){ const txt = await res.text().catch(()=> ''); throw new Error(`GET ${res.status}: ${txt}`); }
+    if(!res.ok){ const txt=await res.text().catch(()=> ''); throw new Error(`GET ${res.status}: ${txt}`); }
     return res.json();
   }
   async function apiPost(route, data = {}){
@@ -99,35 +112,52 @@
       method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
       body: JSON.stringify(data||{})
     });
-    const txt = await res.text().catch(()=> ''); let json = {};
-    try{ json = JSON.parse(txt); }catch{}
+    const txt = await res.text().catch(()=> ''); let json={}; try{ json=JSON.parse(txt);}catch{}
     if(!res.ok || json?.ok===false) throw new Error(json?.error || txt || 'Erro no POST');
     return json;
   }
 
   // ===== UI HELPERS =====
   function setMsg(text, ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
-  function fillSelect(el,list=[],ph='Selecione...'){ el.innerHTML=''; const o=document.createElement('option'); o.value=''; o.textContent=ph; el.appendChild(o); (list||[]).forEach(v=>{ const op=document.createElement('option'); op.value=v; op.textContent=v; el.appendChild(op); }); }
+  function fillVeiculosSelect(soDisponiveis=true){
+    const sel = document.getElementById('veiculo');
+    sel.innerHTML = '';
+    // Disponíveis
+    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent = 'Selecione o veículo'; sel.appendChild(opt0);
+    DISPONIVEIS.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    // Em Curso (opcionais e desabilitados)
+    if(!soDisponiveis){
+      const grp = document.createElement('optgroup'); grp.label = 'Em curso (indisponíveis)';
+      OCUPADOS.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent = `${v} (EM CURSO)`; o.disabled = true; grp.appendChild(o); });
+      sel.appendChild(grp);
+    }
+  }
   const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
 
   function setFormDisabled(disabled){
     ['motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
       const el = document.getElementById(id);
       if(!el) return;
-      if(id==='btnEnviar') el.disabled = disabled;
-      else el.disabled = disabled;
+      el.disabled = disabled;
     });
   }
 
   // ===== PAGE LOGIC =====
   async function loadLists(){
     try{
-      const L = await apiGet('lists');
-      fillSelect(document.getElementById('veiculo'),   L.veiculos,   'Selecione o veículo');
-      fillSelect(document.getElementById('motorista'), L.motoristas, 'Selecione o motorista');
-      fillSelect(document.getElementById('seguranca'), L.segurancas, 'Selecione o segurança');
+      const L = await apiGet('listsAvail');
+      DISPONIVEIS = L.veiculosDisponiveis || [];
+      OCUPADOS    = L.veiculosEmCurso     || [];
+      fillVeiculosSelect(true); // só disponíveis inicialmente
+      // demais listas
+      const selM = document.getElementById('motorista');
+      const selS = document.getElementById('seguranca');
+      selM.innerHTML = '<option value="">Selecione o motorista</option>' + (L.motoristas||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+      selS.innerHTML = '<option value="">Selecione o segurança</option>' + (L.segurancas||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
       document.getElementById('veiculo').focus();
-    }catch(e){ setMsg('Erro ao carregar listas: '+e.message, false); }
+    }catch(e){
+      setMsg('Erro ao carregar listas: '+e.message, false);
+    }
   }
 
   async function onChangeVeiculo(){
@@ -136,7 +166,7 @@
     const hint = document.getElementById('kmAtualHint');
     const kmI  = document.getElementById('kmSaida');
 
-    // limpa
+    // limpa estado
     EM_CURSO = false; KM_ATUAL = 0;
     warn.style.display='none'; hint.style.display='none';
     kmI.classList.remove('danger'); setFormDisabled(false); setMsg('',true);
@@ -144,21 +174,19 @@
     if(!veiculo) return;
 
     try{
-      // consulta status + kmAtual numa tacada só
       const st = await apiGet('statusVeiculo', { veiculo });
       EM_CURSO = !!st.emCurso;
       KM_ATUAL = Number(st.kmAtual||0);
-
       hint.textContent = `Km atual do veículo: ${fmtKm(KM_ATUAL)}`;
       hint.style.display = 'block';
 
       if(EM_CURSO){
         warn.style.display='block';
-        setFormDisabled(true);              // impede interação
-        document.getElementById('veiculo').disabled = false; // ainda pode trocar o veículo
+        setFormDisabled(true);
+        document.getElementById('veiculo').disabled = false;
         document.getElementById('btnEnviar').disabled = true;
       }else{
-        validateKm(); // revalida se usuário já digitou algo
+        validateKm();
       }
     }catch(e){
       hint.textContent = 'Não foi possível obter o status/Km atual.';
@@ -171,12 +199,10 @@
     const v = Number((kmI.value||'').trim());
     const btn = document.getElementById('btnEnviar');
 
-    if(EM_CURSO){
-      btn.disabled = true; return false;
-    }
+    if(EM_CURSO){ btn.disabled = true; return false; }
     if(Number.isFinite(v) && v < KM_ATUAL){
       kmI.classList.add('danger');
-      setMsg(`O Km Saída (${fmtKm(v)}) é MENOR que o Km atual (${fmtKm(KM_ATUAL)}). Oriente o Segurança e corrija o valor.`, false);
+      setMsg(`O Km Saída (${fmtKm(v)}) é MENOR que o Km atual (${fmtKm(KM_ATUAL)}). Oriente o Segurança e corrija.`, false);
       btn.disabled = true; return false;
     }else{
       kmI.classList.remove('danger'); setMsg('',true); btn.disabled = false; return true;
@@ -205,9 +231,13 @@
     }
   }
 
+  // Eventos
   document.getElementById('btnEnviar').addEventListener('click', submit);
   document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
   document.getElementById('kmSaida').addEventListener('input', validateKm);
+  document.getElementById('ckShowBusy').addEventListener('change', (e)=> fillVeiculosSelect(!e.target.checked));
+
+  // Init
   window.addEventListener('load', loadLists);
 </script>
 </body>
