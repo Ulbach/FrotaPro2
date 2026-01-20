@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,6 +26,8 @@
   .msg{margin-top:12px;font-weight:700}
   .ok{color:var(--accent)} .err{color:var(--danger)}
   .muted{color:var(--muted);font-size:12px;margin-top:8px}
+  .row-inline{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .row-inline label{margin:0;font-weight:600}
 </style>
 </head>
 <body>
@@ -43,6 +46,10 @@
       <div class="field">
         <label for="veiculo">Veículo</label>
         <select id="veiculo"><option value="">Carregando...</option></select>
+        <div class="row-inline">
+          <input type="checkbox" id="ckShowBusy" />
+          <label for="ckShowBusy">Mostrar veículos em curso (somente leitura)</label>
+        </div>
       </div>
 
       <div class="field">
@@ -79,12 +86,13 @@
 
 <script>
   // ===== CONFIG =====
-  const API_URL =
-    'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
 
   // ===== STATE =====
   let KM_ATUAL = 0;
   let EM_CURSO = false;
+  let DISPONIVEIS = [];
+  let OCUPADOS = [];
 
   // ===== HTTP =====
   async function apiGet(route, params = {}){
@@ -108,6 +116,25 @@
   function setMsg(text, ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
   const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
 
+  function fillVeiculosSelect(soDisponiveis=true, preselect=null){
+    const sel = document.getElementById('veiculo');
+    sel.innerHTML = '';
+    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent = 'Selecione o veículo'; sel.appendChild(opt0);
+
+    DISPONIVEIS.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+
+    if(!soDisponiveis){
+      const grp = document.createElement('optgroup'); grp.label = 'Em curso (indisponíveis)';
+      OCUPADOS.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=`${v} (EM CURSO)`; o.disabled=true; grp.appendChild(o); });
+      sel.appendChild(grp);
+    }
+    if(preselect){
+      sel.value = preselect;
+      if(sel.value !== preselect){ /* estava em curso e oculto */ document.getElementById('ckShowBusy').checked = true; fillVeiculosSelect(false, preselect); sel.value = preselect; }
+      sel.dispatchEvent(new Event('change'));
+    }
+  }
+
   function setFormDisabled(disabled){
     ['motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
       const el = document.getElementById(id); if(!el) return; el.disabled = disabled;
@@ -117,26 +144,25 @@
   // ===== PAGE LOGIC =====
   async function loadLists(){
     try{
-      // somentes disponíveis
-      const L = await apiGet('listsAvail');
-      const selV = document.getElementById('veiculo');
-      selV.innerHTML = '<option value="">Selecione o veículo</option>' +
-        (L.veiculosDisponiveis||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
-
-      document.getElementById('motorista').innerHTML =
-        '<option value="">Selecione o motorista</option>' + (L.motoristas||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
-      document.getElementById('seguranca').innerHTML =
-        '<option value="">Selecione o segurança</option>' + (L.segurancas||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
-
-      // pré-seleção via query ?veiculo=...
+      let L;
+      try {
+        L = await apiGet('listsAvail'); // preferencial
+      } catch (e) {
+        // fallback p/ compatibilidade
+        const base = await apiGet('lists');
+        L = { veiculosDisponiveis: base.veiculos||[], veiculosEmCurso: [], motoristas: base.motoristas||[], segurancas: base.segurancas||[] };
+      }
+      DISPONIVEIS = L.veiculosDisponiveis || [];
+      OCUPADOS    = L.veiculosEmCurso     || [];
       const q = new URLSearchParams(location.search);
       const pre = q.get('veiculo');
-      if(pre && (L.veiculosDisponiveis||[]).includes(pre)){
-        selV.value = pre;
-        selV.dispatchEvent(new Event('change'));
-      } else {
-        selV.focus();
-      }
+      fillVeiculosSelect(true, pre);
+
+      // Demais listas
+      document.getElementById('motorista').innerHTML = '<option value="">Selecione o motorista</option>' + (L.motoristas||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+      document.getElementById('seguranca').innerHTML = '<option value="">Selecione o segurança</option>' + (L.segurancas||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+
+      if(!pre) document.getElementById('veiculo').focus();
     }catch(e){
       setMsg('Erro ao carregar listas: '+e.message, false);
     }
@@ -159,383 +185,64 @@
       EM_CURSO = !!st.emCurso;
       KM_ATUAL = Number(st.kmAtual||0);
 
-      hint.textContent = `KmPerfeito, Fabricio — vamos deixar **exatamente do jeito que você quer**:
+      hint.textContent = `Km atual do veículo: ${fmtKm(KM_ATUAL)}`;
+      hint.style.display = 'block';
 
-- **Não mostrar veículos “EM CURSO” na tela de Saída** (sem checkbox, somente **disponíveis**).
-- **Corrigir a Home (index.html)** para **voltar a exibir “MOVIMENTAÇÃO RECENTE”** (o problema vinha do `Code.gs`).  
-  Para isso, te envio um **`Code.gs` completo** com mapeamento de colunas **tolerante a variações** (acentos, espaços, “Dados Saída” vs “DadosSaida”, etc.), o que evita que a lista fique vazia quando o cabeçalho da planilha não está escrito **idêntico** ao esperado.
-
-Abaixo seguem **os arquivos completos** para você apenas **substituir**:
-
----
-
-## 1) **Apps Script** — `Code.gs` (SUBSTITUIR 100%)
-
-> Cole **tudo** no editor do Apps Script (apagando o conteúdo anterior) e **Implante → Aplicativo da Web**.  
-> Se a URL **/exec** mudar, atualize a `API_URL` do `saida.html`.
-
-```javascript
-/************************************************************
- * FROTA PRO — BACKEND (Apps Script) — Code.gs (COMPLETO)
- * Camadas:
- *   - Mapeamento de colunas **tolerante** (acentos, espaços, variações)
- *   - Rotas REST para front no GitHub Pages
- *   - Bloqueio de nova Saída se veículo estiver **EM CURSO**
- *   - Validação de KM (Saída >= KM Atual; Entrada >= KM Saída)
- * Rotas:
- *   GET  ?route=ping
- *   GET  ?route=home
- *   GET  ?route=lists
- *   GET  ?route=listsAvail
- *   GET  ?route=kmAtual&veiculo=...
- *   GET  ?route=statusVeiculo&veiculo=...
- *   GET  ?route=diag
- *   POST ?route=saida
- *   POST ?route=entrada
- ************************************************************/
-
-/************* CONFIG *************/
-const SHEET_ID = '1InNx25rQ6_5bxqcFK95neE0lF2OW-r1HtpyH2QD4vJs'; // troque se necessário
-const ABA_DADOS = 'App_Controle2';
-const ABA_LISTAGEM = 'Listagem2';
-const NOME_TABELA_DADOS = 'Dados'; // opcional
-const NOME_TABELA_LIST  = 'List';  // opcional
-
-/************* FUSO & FORMATO *************/
-const TIMEZONE = 'America/Campo_Grande';
-const DATE_FMT = 'dd/MM/yyyy HH:mm:ss';
-const nowStr_ = (d = new Date()) => Utilities.formatDate(d, TIMEZONE, DATE_FMT);
-
-/************* WEB APP (API) *************/
-function doGet(e) {
-  try {
-    const route = (e && e.parameter && String(e.parameter.route || 'home')) || 'home';
-
-    if (route === 'ping')          return resp_({ ok:true, service:'online', when: nowStr_() });
-    if (route === 'home')          return resp_(getHomeData_());
-    if (route === 'lists')         return resp_(getLists_());
-    if (route === 'listsAvail')    return resp_(getListsAvail_());
-    if (route === 'kmAtual')       return resp_(getKmAtual_(String(e.parameter.veiculo || '').trim()));
-    if (route === 'statusVeiculo') return resp_(statusVeiculo_(String(e.parameter.veiculo || '').trim()));
-    if (route === 'diag')          return resp_(diag_());
-
-    return resp_({ ok:false, error:'route inválida: '+route });
-  } catch (err) {
-    return respErr_(err);
-  }
-}
-function doPost(e) {
-  try {
-    const route = (e && e.parameter && String(e.parameter.route || '')) || '';
-    const body  = e && e.postData && e.postData.contents ? e.postData.contents : '{}';
-    const data  = JSON.parse(body || '{}');
-
-    if (route === 'saida')   return resp_(submitSaida_(data));
-    if (route === 'entrada') return resp_(submitEntrada_(data));
-
-    return resp_({ ok:false, error:'route inválida: '+route });
-  } catch (err) {
-    return respErr_(err);
-  }
-}
-
-/************* RESPONSORES *************/
-function resp_(obj){ return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
-function respErr_(err){ return resp_({ ok:false, error:String(err) }); }
-
-/************* UTIL *************/
-function openSS_(){ return SpreadsheetApp.openById(SHEET_ID); }
-function getSheetByName_(ss, name){ const sh=ss.getSheetByName(name); if(!sh) throw new Error(`Aba "${name}" não encontrada.`); return sh; }
-function getNamedRange_(ss, named){ return ss.getRangeByName(named) || null; }
-
-/** normaliza string: minúscula, sem acentos, sem espaços */
-function norm_(s){
-  return String(s||'').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/\s+/g,'').replace(/[^\w]/g,'');
-}
-
-/** cria mapa de colunas tolerante a variações */
-function colMapFlexible_(headers){
-  const idxByNorm = {};
-  headers.forEach((h,i)=> idxByNorm[norm_(h)] = i);
-
-  function findOne(cands){
-    for (let alias of cands){
-      const i = idxByNorm[norm_(alias)];
-      if (i != null) return i;
+      if(EM_CURSO){
+        warn.style.display='block';
+        setFormDisabled(true);
+        document.getElementById('veiculo').disabled = false;
+        document.getElementById('btnEnviar').disabled = true;
+      }else{
+        validateKm();
+      }
+    }catch(e){
+      hint.textContent = 'Não foi possível obter o status/Km atual.';
+      hint.style.display = 'block';
     }
-    return null;
   }
-  const map = {
-    'Veiculo':     findOne(['Veiculo','Veiculo(s)','Veiculos']),
-    'Motorista':   findOne(['Motorista','Condutor']),
-    'Segurança':   findOne(['Segurança','Seguranca']),
-    'KmSaida':     findOne(['KmSaida','Km Saida','KM Saída','OdometroSaida','Odômetro Saída']),
-    'Destino':     findOne(['Destino']),
-    'DadosSaida':  findOne(['DadosSaida','DataSaida','Data/Hora Saida','DataHoraSaida']),
-    'Status':      findOne(['Status','Situacao','Situação']),
-    'KmRetorno':   findOne(['KmRetorno','KM Retorno','OdometroRetorno','Odômetro Retorno']),
-    'KmRodado':    findOne(['KmRodado','KM Rodado','Kms']),
-    'DataRetorno': findOne(['DataRetorno','Data/Hora Retorno','DataHoraRetorno'])
+
+  const validateKm = () => {
+    const kmI = document.getElementById('kmSaida');
+    const v = Number((kmI.value||'').trim());
+    const btn = document.getElementById('btnEnviar');
+    if(EM_CURSO){ btn.disabled=true; return false; }
+    if(Number.isFinite(v) && v < KM_ATUAL){
+      kmI.classList.add('danger');
+      setMsg(`O Km Saída (${v.toLocaleString('pt-BR')}) é MENOR que o Km atual (${fmtKm(KM_ATUAL)}). Oriente o Segurança e corrija.`, false);
+      btn.disabled = true; return false;
+    }
+    kmI.classList.remove('danger'); setMsg('',true); btn.disabled=false; return true;
   };
-  // verificação suave: só falha crítica quando realmente necessário
-  return map;
-}
 
-function readTable_(sh, named){
-  const ss = openSS_();
-  let range = named ? getNamedRange_(ss, named) : null;
-  if (!range) range = sh.getRange(1,1, sh.getLastRow(), sh.getLastColumn());
-  const values = range.getValues();
-  if (values.length === 0) return { headers:[], map:{}, data:[] };
-  const headers = values[0].map(h => String(h||'').trim());
-  const map = colMapFlexible_(headers);
-  const data = values.slice(1);
-  return { headers, map, data, startRow: range.getRow(), startCol: range.getColumn() };
-}
+  async function submit(){
+    const veiculo   = (document.getElementById('veiculo').value||'').trim();
+    const motorista = (document.getElementById('motorista').value||'').trim();
+    const seguranca = (document.getElementById('seguranca').value||'').trim();
+    const kmSaida   = Number((document.getElementById('kmSaida').value||'').trim());
+    const destino   = (document.getElementById('destino').value||'').trim();
 
-/************* HOME *************/
-function getHomeData_(){
-  const ss = openSS_();
-  const totalVeiculos = getTotalVeiculos__(ss);
-  const recentes = getMovimentacaoRecente__(ss, 6); // mostra até 6 últimas
-  return { ok:true, online:true, totalVeiculos, recentes };
-}
-function getTotalVeiculos__(ss){
-  const sh = getSheetByName_(ss, ABA_LISTAGEM);
-  const { headers, map, data } = readTable_(sh, NOME_TABELA_LIST);
-  const iV = map['Veiculo']; if (iV == null) return 0;
-  const set = new Set();
-  data.forEach(row => { const v = row[iV]; if (v) set.add(String(v).trim()); });
-  return set.size;
-}
-function getMovimentacaoRecente__(ss, limit){
-  const sh = getSheetByName_(ss, ABA_DADOS);
-  const { headers, map, data } = readTable_(sh, NOME_TABELA_DADOS);
-  const iV=map['Veiculo'], iM=map['Motorista'], iSg=map['Segurança'], iSt=map['Status'],
-        iSa=map['DadosSaida'], iRe=map['DataRetorno'], iKS=map['KmSaida'], iKR=map['KmRetorno'];
-  if (iV==null) return []; // sem cabeçalho reconhecido
+    if(EM_CURSO){ setMsg('Veículo NÃO disponível: há uma saída em curso.', false); return; }
+    if(!veiculo || !motorista || !seguranca || !Number.isFinite(kmSaida)){ setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return; }
+    if(!validateKm()) return;
 
-  const out = [];
-  // percorre de baixo para cima e pega linhas com veículo preenchido
-  for (let r = data.length - 1; r >= 0 && out.length < limit; r--){
-    const row = data[r];
-    const veic = String(row[iV]||'').trim();
-    if (!veic) continue;
-    const st    = String(iSt!=null? row[iSt] : '').trim();
-    const ret   = iRe!=null? row[iRe] : '';
-    const disp  = st.toLowerCase().includes('conclu') || !!ret;
-
-    // formata datas se vieram como Date
-    const saidaFmt   = iSa!=null ? (row[iSa] instanceof Date ? nowStr_(row[iSa]) : String(row[iSa]||'')) : '';
-    const retornoFmt = iRe!=null ? (row[iRe] instanceof Date ? nowStr_(row[iRe]) : String(row[iRe]||'')) : '';
-
-    out.push({
-      veiculo: veic,
-      motorista: iM!=null ? String(row[iM]||'') : '',
-      seguranca: iSg!=null ? String(row[iSg]||'') : '',
-      status: disp ? 'DISPONÍVEL' : (st || 'EM CURSO').toUpperCase(),
-      corStatus: disp ? 'ok' : 'warn',
-      saida: saidaFmt,
-      retorno: retornoFmt,
-      kmSaida: iKS!=null ? row[iKS] : null,
-      kmRetorno: iKR!=null ? row[iKR] : null
-    });
+    const btn = document.getElementById('btnEnviar'); btn.disabled = true; setMsg('Enviando...', true);
+    try{
+      const r = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
+      setMsg(r.message + (r.timestamp ? ` — ${r.timestamp}` : ''), true);
+      setTimeout(()=> location.href = './', 1200);
+    }catch(e){
+      setMsg('Erro: ' + e.message, false);
+      btn.disabled = false;
+    }
   }
-  return out;
-}
 
-/************* LISTAS *************/
-function getLists_(){
-  const ss = openSS_();
-  const sh = getSheetByName_(ss, ABA_LISTAGEM);
-  const { headers, map, data } = readTable_(sh, NOME_TABELA_LIST);
-  const iV=map['Veiculo'], iM=map['Motorista'], iSg=map['Segurança'];
-  if (iV==null || iM==null || iSg==null)
-    return { ok:true, veiculos:[], motoristas:[], segurancas:[] };
+  document.getElementById('btnEnviar').addEventListener('click', submit);
+  document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
+  document.getElementById('kmSaida').addEventListener('input', validateKm);
+  document.getElementById('ckShowBusy').addEventListener('change', (e)=> fillVeiculosSelect(!e.target.checked));
 
-  const vs = new Set(), ms = new Set(), ssSet = new Set();
-  data.forEach(row=>{
-    if (row[iV])  vs.add(String(row[iV]).trim());
-    if (row[iM])  ms.add(String(row[iM]).trim());
-    if (row[iSg]) ssSet.add(String(row[iSg]).trim());
-  });
-  return { ok:true, veiculos:[...vs], motoristas:[...ms], segurancas:[...ssSet] };
-}
-
-/** Disponíveis x Em Curso para filtrar no front */
-function getListsAvail_(){
-  const base = getLists_();
-  const ss = openSS_();
-  const busy = getVeiculosEmCursoSet__(ss);
-
-  const disp = [], emc = [];
-  (base.veiculos||[]).forEach(v => (busy.has(v.toLowerCase()) ? emc : disp).push(v));
-  return { ok:true,
-    veiculosDisponiveis: disp,
-    veiculosEmCurso: emc,
-    motoristas: base.motoristas,
-    segurancas: base.segurancas
-  };
-}
-
-function getVeiculosEmCursoSet__(ss){
-  const set = new Set();
-  const sh = getSheetByName_(ss, ABA_DADOS);
-  const { headers, map, data } = readTable_(sh, NOME_TABELA_DADOS);
-  const iV=map['Veiculo'], iSt=map['Status'], iRe=map['DataRetorno'];
-  if (iV==null) return set;
-
-  const lastByV = new Map();
-  for (let i=0;i<data.length;i++){
-    const v = String(data[i][iV]||'').trim();
-    if (!v) continue;
-    lastByV.set(v, data[i]); // última ocorrência
-  }
-  for (const [v,row] of lastByV.entries()){
-    const st  = String(iSt!=null? row[iSt] : '').trim().toLowerCase();
-    const ret = iRe!=null ? row[iRe] : '';
-    const emCurso = (st==='em curso' || st==='em viagem' || st==='') && (!ret || ret==='');
-    if (emCurso) set.add(v.toLowerCase());
-  }
-  return set;
-}
-
-/************* KM ATUAL + STATUS *************/
-function getKmAtual_(veiculo){
-  if (!veiculo) return { ok:true, kmAtual:0 };
-  const ss = openSS_();
-  const sh = getSheetByName_(ss, ABA_DADOS);
-  const { headers, map, data } = readTable_(sh, NOME_TABELA_DADOS);
-  const iV=map['Veiculo'], iKR=map['KmRetorno'], iKS=map['KmSaida'];
-  if (iV==null) return { ok:true, kmAtual:0 };
-
-  const alvo = String(veiculo).trim().toLowerCase();
-  for (let i=data.length-1;i>=0;i--){
-    const row = data[i];
-    const v   = String(row[iV]||'').trim().toLowerCase();
-    if (v!==alvo) continue;
-    const kmRet = iKR!=null? Number(row[iKR]) : NaN;
-    const kmSai = iKS!=null? Number(row[iKS]) : NaN;
-    const kmAtual = (!isNaN(kmRet) && kmRet>0) ? kmRet : (!isNaN(kmSai) ? kmSai : 0);
-    return { ok:true, kmAtual };
-  }
-  return { ok:true, kmAtual:0 };
-}
-function statusVeiculo_(veiculo){
-  const ss = openSS_();
-  const busy = getVeiculosEmCursoSet__(ss).has(String(veiculo).trim().toLowerCase());
-  const km   = getKmAtual_(veiculo);
-  return { ok:true, emCurso:busy, kmAtual:Number(km.kmAtual||0) };
-}
-
-/************* SAÍDA (bloqueio + valida KM) *************/
-function submitSaida_(p){
-  ['veiculo','motorista','seguranca','kmSaida'].forEach(k=>{ if(p[k]==null || String(p[k]).trim()==='') throw new Error(`Campo obrigatório: ${k}`); });
-
-  const ss = openSS_();
-  if (getVeiculosEmCursoSet__(ss).has(String(p.veiculo).trim().toLowerCase()))
-    throw new Error('Veículo NÃO disponível: existe uma saída em curso. Conclua a ENTRADA antes de registrar nova SAÍDA.');
-
-  const sh = getSheetByName_(ss, ABA_DADOS);
-  const { headers, map, data, startRow, startCol } = readTable_(sh, NOME_TABELA_DADOS);
-
-  const need = ['Veiculo','Motorista','Segurança','KmSaida','Destino','DadosSaida','Status','KmRetorno','KmRodado','DataRetorno'];
-  need.forEach(c=>{ if(map[c]==null) throw new Error(`Coluna não encontrada: ${c}`); });
-
-  const kmChk = getKmAtual_(String(p.veiculo).trim());
-  const kmAtual = Number(kmChk.kmAtual||0);
-  const kmSai   = Number(p.kmSaida);
-  if (!isFinite(kmSai)) throw new Error('KmSaida inválido.');
-  if (kmSai < kmAtual) throw new Error(`Km Saída (${kmSai}) menor que Km atual (${kmAtual}).`);
-
-  const now = new Date();
-  const row = new Array(headers.length).fill('');
-  row[map['Veiculo']]   = String(p.veiculo).trim();
-  row[map['Motorista']] = String(p.motorista).trim();
-  row[map['Segurança']] = String(p.seguranca).trim();
-  row[map['KmSaida']]   = kmSai;
-  row[map['Destino']]   = p.destino ? String(p.destino).trim() : '';
-  row[map['DadosSaida']]= nowStr_(now);
-  row[map['Status']]    = 'Em Curso';
-  row[map['KmRetorno']] = '';
-  row[map['KmRodado']]  = '';
-  row[map['DataRetorno']]= '';
-
-  // acrescenta (respeitando named range, se existir)
-  if (NOME_TABELA_DADOS && getNamedRange_(openSS_(), NOME_TABELA_DADOS)) {
-    const nr = getNamedRange_(openSS_(), NOME_TABELA_DADOS);
-    const targetRow = startRow + (nr.getNumRows());
-    sh.getRange(targetRow, startCol, 1, headers.length).setValues([row]);
-    SpreadsheetApp.openById(SHEET_ID).setNamedRange(
-      NOME_TABELA_DADOS, sh.getRange(startRow, startCol, nr.getNumRows()+1, headers.length)
-    );
-  } else {
-    sh.appendRow(row);
-  }
-  return { ok:true, message:'Saída registrada com sucesso.', timestamp: nowStr_(now) };
-}
-
-/************* ENTRADA *************/
-function submitEntrada_(p){
-  ['veiculo','kmRetorno'].forEach(k=>{ if(p[k]==null || String(p[k]).trim()==='') throw new Error(`Campo obrigatório: ${k}`); });
-
-  const ss = openSS_();
-  const sh = getSheetByName_(ss, ABA_DADOS);
-  const { headers, map, data } = readTable_(sh, NOME_TABELA_DADOS);
-  const need = ['Veiculo','KmSaida','Status','KmRetorno','KmRodado','DataRetorno'];
-  need.forEach(c=>{ if(map[c]==null) throw new Error(`Coluna não encontrada: ${c}`); });
-
-  const alvo = String(p.veiculo).trim().toLowerCase();
-  let idx = -1;
-  for (let i=data.length-1;i>=0;i--){
-    const v = String(data[i][map['Veiculo']]||'').trim().toLowerCase();
-    const st= String(data[i][map['Status']]||'').trim().toLowerCase();
-    if (v===alvo && (st==='em curso'||st==='em viagem'||st==='')) { idx = i; break; }
-  }
-  if (idx < 0) throw new Error('Nenhuma saída em aberto para este veículo.');
-
-  const abs = 2 + idx;
-  const kmSaida = Number(data[idx][map['KmSaida']]||0);
-  const kmRet   = Number(p.kmRetorno);
-  if (!isFinite(kmRet)) throw new Error('KmRetorno inválido.');
-  if (kmRet < kmSaida)  throw new Error('KmRetorno menor que KmSaida.');
-
-  const kmRod = kmRet - kmSaida;
-  const now = nowStr_();
-
-  sh.getRange(abs, map['KmRetorno']+1).setValue(kmRet);
-  sh.getRange(abs, map['KmRodado']+1).setValue(kmRod);
-  sh.getRange(abs, map['DataRetorno']+1).setValue(now);
-  sh.getRange(abs, map['Status']+1).setValue('Concluído');
-
-  return { ok:true, message:'Entrada registrada com sucesso.', kmRodado:kmRod, dataRetorno:now };
-}
-
-/************* DIAGNÓSTICO *************/
-function diag_(){
-  const out = { ok:true, sheetId:SHEET_ID, time: nowStr_() };
-  try{
-    const ss = openSS_();
-    out.fileName = ss.getName();
-    out.sheets   = ss.getSheets().map(s=>s.getName());
-
-    const list = getSheetByName_(ss, ABA_LISTAGEM);
-    out.listagem = {
-      name: ABA_LISTAGEM,
-      lastRow: list.getLastRow(),
-      headers: list.getRange(1,1,1,list.getLastColumn()).getDisplayValues()[0]
-    };
-    const dados = getSheetByName_(ss, ABA_DADOS);
-    out.dados = {
-      name: ABA_DADOS,
-      lastRow: dados.getLastRow(),
-      headers: dados.getRange(1,1,1,dados.getLastColumn()).getDisplayValues()[0]
-    };
-  }catch(e){
-    return { ok:false, error: String(e) };
-  }
-  return out;
-}
-``
+  window.addEventListener('load', loadLists);
+</script>
+</body>
+</html>
