@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -18,13 +19,13 @@
   select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
   .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
   .info{margin-top:6px;padding:10px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#0b1020;font-size:13px}
-  .kv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .kv{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .kv span{font-weight:800}
   .hint-danger{color:var(--danger);font-size:12px;margin-top:6px;display:none}
   .danger{border-color:var(--danger)!important}
   .btn{margin-top:12px;width:100%;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
   .btn:disabled{opacity:.6;cursor:not-allowed}
-  .muted{color:var(--muted);font-size:12px;margin-top:8px}
+  .muted{color:#64748b;font-size:12px;margin-top:8px}
   .msg{margin-top:12px;font-weight:700}
   .ok{color:var(--accent)} .err{color:var(--danger)}
 </style>
@@ -45,12 +46,13 @@
       <div id="warnNotCurso" class="banner-warn">VEÍCULO NÃO ESTÁ EM CURSO — selecione um veículo em uso para concluir a entrada.</div>
 
       <div class="field">
-        <label for="veiculo">Veículo</label>
+        <label for="veiculo">Veículo (em curso)</label>
         <select id="veiculo">
           <option value="">Carregando...</option>
         </select>
       </div>
 
+      <!-- Viewer km anterior -->
       <div id="viewer" class="info" style="display:none">
         <div class="kv"><span>Km anterior:</span><div id="kmAnteriorV">—</div></div>
       </div>
@@ -62,23 +64,19 @@
       </div>
 
       <div class="field">
-        <label for="motorista">Motorista (opcional — pode atualizar)</label>
-        <select id="motorista">
-          <option value="">(manter o mesmo)</option>
-        </select>
+        <label for="motorista">Motorista</label>
+        <select id="motorista"></select>
       </div>
 
       <div class="field">
-        <label for="seguranca">Segurança (opcional — pode atualizar)</label>
-        <select id="seguranca">
-          <option value="">(manter o mesmo)</option>
-        </select>
+        <label for="seguranca">Segurança</label>
+        <select id="seguranca"></select>
       </div>
 
       <button id="btnEnviar" class="btn" disabled>Gravar Entrada</button>
 
       <div class="muted">
-        A entrada encerra a última saída “Em Curso” do veículo, grava <b>DataRetorno</b>, <b>KmRetorno</b> e <b>KmRodado</b>.
+        A entrada encerra a última saída “Em Curso” do veículo e grava <b>DataRetorno</b>, <b>KmRetorno</b> e <b>KmRodado</b>. Motorista e Segurança são carregados da última saída e podem ser alterados.
       </div>
       <div id="msg" class="msg" aria-live="polite"></div>
     </div>
@@ -94,6 +92,8 @@
   let KM_ANTERIOR = NaN;
   let EM_CURSO = false;
   let inFlight = false;
+  let L_MOTORISTAS = [];
+  let L_SEGURANCAS = [];
 
   // ===== HTTP helpers =====
   async function withTimeout(promise, ms, controller){
@@ -101,7 +101,6 @@
     try { return await promise; } finally { clearTimeout(t); }
   }
   function buildQuery(params){ return new URLSearchParams(params).toString(); }
-
   async function apiGet(route, params = {}){
     const ctrl = new AbortController();
     const url = `${API_URL}?${buildQuery({ route, t: Date.now(), ...params })}`;
@@ -116,7 +115,6 @@
     if(!res.ok){ throw new Error(json?.error || txt || `Erro HTTP ${res.status}`); }
     return json;
   }
-
   async function apiPost(route, data = {}){
     const ctrl = new AbortController();
     const url = `${API_URL}?${buildQuery({ route, t: Date.now() })}`;
@@ -143,8 +141,19 @@
 
   function fillSelect(el, list, placeholder){
     el.innerHTML = '';
+    // 1ª opção: “selecione...” apenas quando NÃO temos um valor conhecido ainda
     const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder; el.appendChild(opt0);
     (list||[]).forEach(v=>{ const o=document.createElement('option'); const t=String(v).trim(); o.value=t; o.textContent=t; el.appendChild(o); });
+  }
+  function ensureOption(el, val){
+    if(!val) return;
+    const v = String(val).trim();
+    const has = [...el.options].some(o => String(o.value) === v);
+    if(!has){
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v + ' (da última saída)';
+      el.insertBefore(o, el.firstChild.nextSibling); // adiciona logo após a opção vazia
+    }
   }
 
   function sanitizeKmInput(){
@@ -152,7 +161,6 @@
     const raw = String(el.value||''); const onlyDigits = raw.replace(/[^\d]/g,'');
     if(raw!==onlyDigits) el.value = onlyDigits;
   }
-
   function validateKm(){
     const inp = document.getElementById('kmRetorno');
     sanitizeKmInput();
@@ -167,7 +175,6 @@
     }
     inp.classList.remove('danger'); setMsg('', true); return true;
   }
-
   function validateForm(){
     const veiculo = (document.getElementById('veiculo').value||'').trim();
     const kmOK = validateKm();
@@ -183,25 +190,32 @@
     try{
       let L;
       try{
-        L = await apiGet('listsAvail'); // preferencial
+        L = await apiGet('listsAvail'); // preferencial (traz veiculosEmCurso)
       }catch{
-        // fallback (compatibilidade): usa 'lists' e deixa validação pelo statusVeiculo
         const base = await apiGet('lists');
         L = { veiculosDisponiveis: [], veiculosEmCurso: base.veiculos||[], motoristas: base.motoristas||[], segurancas: base.segurancas||[] };
       }
+      L_MOTORISTAS = Array.isArray(L.motoristas)? L.motoristas : [];
+      L_SEGURANCAS = Array.isArray(L.segurancas)? L.segurancas : [];
 
-      // popula somente veículos em curso
+      // popula apenas veículos em curso
       const sel = document.getElementById('veiculo');
       const emCurso = Array.isArray(L.veiculosEmCurso)? L.veiculosEmCurso : [];
       if(emCurso.length===0){
         sel.innerHTML = '<option value="">(Nenhum veículo em curso)</option>';
       }else{
-        fillSelect(sel, emCurso, 'Selecione o veículo (em curso)');
+        // suporte a pré-seleção via querystring ?veiculo=XYZ
+        const q = new URLSearchParams(location.search);
+        const pre = (q.get('veiculo')||'').trim();
+        sel.innerHTML = '';
+        const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='Selecione o veículo (em curso)'; sel.appendChild(opt0);
+        emCurso.forEach(v => { const o=document.createElement('option'); const t=String(v).trim(); o.value=t; o.textContent=t; sel.appendChild(o); });
+        if(pre){ sel.value = pre; }
       }
 
-      // demais listas para editar opcionalmente
-      fillSelect(document.getElementById('motorista'), L.motoristas||[], '(manter o mesmo)');
-      fillSelect(document.getElementById('seguranca'), L.segurancas||[], '(manter o mesmo)');
+      // popula selects com listas-base (vamos pré-selecionar com os valores reais ao escolher o veículo)
+      fillSelect(document.getElementById('motorista'), L_MOTORISTAS, 'Selecione o motorista');
+      fillSelect(document.getElementById('seguranca'), L_SEGURANCAS, 'Selecione o segurança');
 
       // foco
       sel.focus();
@@ -232,6 +246,19 @@
       if(!Number.isFinite(KM_ANTERIOR)) KM_ANTERIOR = NaN;
 
       if(EM_CURSO){
+        // 1) Preencher selects COM os dados atuais da última saída
+        const mSel = document.getElementById('motorista');
+        const sSel = document.getElementById('seguranca');
+        const mAtual = (st?.motorista||'').trim();
+        const sAtual = (st?.seguranca||'').trim();
+
+        // garante que os valores atuais existam na lista e pré-seleciona
+        ensureOption(mSel, mAtual);
+        ensureOption(sSel, sAtual);
+        if(mAtual) mSel.value = mAtual; else mSel.value='';
+        if(sAtual) sSel.value = sAtual; else sSel.value='';
+
+        // 2) Exibir Km anterior
         kmV.textContent = Number.isFinite(KM_ANTERIOR) ? fmtKm(KM_ANTERIOR) : 'não disponível';
         viewer.style.display = 'block';
         if(Number.isFinite(KM_ANTERIOR)){
@@ -253,8 +280,8 @@
     const veiculo   = (document.getElementById('veiculo').value||'').trim();
     sanitizeKmInput();
     const kmRetorno = Number((document.getElementById('kmRetorno').value||'').trim());
-    const motorista = (document.getElementById('motorista').value||'').trim();   // opcional
-    const seguranca = (document.getElementById('seguranca').value||'').trim();   // opcional
+    const motorista = (document.getElementById('motorista').value||'').trim();
+    const seguranca = (document.getElementById('seguranca').value||'').trim();
 
     if(!veiculo || !Number.isFinite(kmRetorno)){ setMsg('Informe Veículo e Km Retorno válido.', false); return; }
     if(!validateKm()) return;
@@ -265,10 +292,8 @@
     setMsg('Enviando...', true);
 
     try{
-      const payload = { veiculo, kmRetorno };
-      if(motorista) payload.motorista = motorista;
-      if(seguranca) payload.seguranca = seguranca;
-
+      // Envia SEMPRE os nomes que estão selecionados — assim os dados ficam explícitos e auditáveis
+      const payload = { veiculo, kmRetorno, motorista, seguranca };
       const r = await apiPost('entrada', payload);
       setMsg(`${r?.message||'Entrada registrada com sucesso!'} — Km Rodado: ${r?.kmRodado??'-'} — Data: ${r?.dataRetorno??'-'}`, true);
       setTimeout(()=> location.href='./', 1200);
