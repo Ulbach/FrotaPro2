@@ -32,8 +32,7 @@ const ActiveTrips: React.FC<ActiveTripsProps> = ({ trips, refs, onFinish, isLoad
   const handleFinish = (id: string) => {
     const val = Number(kmRetorno);
     if (selectedTrip && val < selectedTrip.kmSaida) {
-      alert(`ERRO: O KM de Retorno (${val}) não pode ser menor que o KM de Saída (${selectedTrip.kmSaida}).`);
-      return;
+      return; // A validação visual já bloqueia o botão
     }
     if (!kmRetorno) {
       alert("Por favor, informe o KM Atual.");
@@ -68,7 +67,7 @@ const ActiveTrips: React.FC<ActiveTripsProps> = ({ trips, refs, onFinish, isLoad
       <div className="flex items-center space-x-3 px-2">
         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
         <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
-          Veículos em Rota ({activeOnes.length})
+          VEÍCULOS EM ROTA ({activeOnes.length})
         </h2>
       </div>
       
@@ -81,7 +80,7 @@ const ActiveTrips: React.FC<ActiveTripsProps> = ({ trips, refs, onFinish, isLoad
                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">{trip.motorista}</p>
               </div>
               <div className="bg-emerald-50 px-3 py-1 rounded-full">
-                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Ativo</span>
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">ATIVO</span>
               </div>
             </div>
 
@@ -128,11 +127,11 @@ const ActiveTrips: React.FC<ActiveTripsProps> = ({ trips, refs, onFinish, isLoad
                     </div>
                     
                     <div className="mt-2 flex flex-col space-y-1 px-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider italic">KM DE SAÍDA: {trip.kmSaida}</span>
+                      <span className="text-[10px] font-black text-red-600 uppercase tracking-wider">KM DE SAÍDA: {trip.kmSaida}</span>
                       {isKmInvalid && (
-                        <div className="bg-red-50 p-3 rounded-xl border border-red-100 mt-2 animate-bounce">
-                          <span className="text-[11px] font-black text-red-600 uppercase leading-none block text-center">
-                            O KM DE RETORNO NÃO PODE SER MENOR QUE O KM DE SAÍDA!
+                        <div className="bg-red-600 p-2 rounded-lg mt-2 animate-pulse">
+                          <span className="text-[10px] font-black text-white uppercase block text-center">
+                            O KM ATUAL NÃO PODE SER MENOR QUE O KM DE SAÍDA!
                           </span>
                         </div>
                       )}
