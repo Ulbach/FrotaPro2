@@ -15,6 +15,7 @@
   .phone{width:420px;max-width:100%;height:840px;max-height:94vh;margin:20px auto;background:linear-gradient(180deg,#f7f9fc 0%,#f3f6fb 100%);
     border-radius:28px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.25);overflow:hidden}
   .scroll{height:100%;overflow:auto}
+  /* Banner */
   .banner{position:relative;margin:18px;border-radius:24px;height:180px;overflow:hidden;box-shadow:var(--shadow);
     background:#101827 url('https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat}
   .banner::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(2,6,23,.55) 0%,rgba(2,6,23,0) 60%)}
@@ -26,15 +27,18 @@
   .banner-title h1{margin:0;font-size:28px;letter-spacing:.18em;font-weight:800}
   .banner-sub{margin-top:6px;font-size:12px;color:#a5f3fc;font-weight:700;letter-spacing:.05em}
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:8px 18px 0}
-  .action{background:#fff;border:1px solid #eef0f5;border-radius:18px;padding:18px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;cursor:pointer}
+  /* Ações — centralizadas */
+  .actions{display:flex;gap:14px;justify-content:center;align-items:center;padding:8px 18px 0}
+  .action{flex:0 1 45%;max-width:180px;background:#fff;border:1px solid #eef0f5;border-radius:18px;padding:18px;
+    box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;justify-content:center;cursor:pointer}
   .action:active{transform:scale(.98)}
   .ico{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:18px;font-weight:800}
   .out{background:#fee2e2;color:#ef4444;border:1px solid #fecaca}
   .in{ background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
-  .txt{font-weight:800;color:#0b1020}
+  .txt{font-weight:800;color:#0b1020;text-align:left}
   .muted{color:#64748b}
 
+  /* Seção lista */
   .section{padding:16px 18px 6px}
   .section h3{margin:12px 0 6px;color:#94a3b8;font-size:12px;letter-spacing:.18em;font-weight:800;display:flex;gap:10px;align-items:center}
   .list{display:grid;gap:12px;padding:0 18px 18px}
@@ -47,6 +51,7 @@
   .ok{background:#eafff4;color:#16a34a;border-color:#bbf7d0}
   .warn{background:#fff5f5;color:#ef4444;border-color:#fecaca}
   .footer{text-align:center;color:#c0c7d2;font-size:11px;padding:8px 0 16px;letter-spacing:.35em;font-weight:700}
+  @media (max-width:380px){ .action{flex:1 1 48%;max-width:none} }
 </style>
 </head>
 <body>
@@ -71,8 +76,8 @@
         </div>
       </section>
 
-      <!-- AÇÕES -->
-      <section class="grid">
+      <!-- AÇÕES (centralizadas) -->
+      <section class="actions">
         <div class="action" onclick="openSaida()">
           <div class="ico out">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 6H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M13 16l5-4-5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -105,15 +110,11 @@
   </div>
 
 <script>
-  // --- helpers ---
+  // Helpers
   function fmt(v){ return (v||'').toString().trim(); }
   function renderRecentes(items){
-    const wrap = document.getElementById('listaRecentes');
-    wrap.innerHTML = '';
-    if(!items || !items.length){
-      wrap.innerHTML = '<div class="muted" style="padding:0 18px 16px">Sem movimentações ainda.</div>';
-      return;
-    }
+    const wrap = document.getElementById('listaRecentes'); wrap.innerHTML = '';
+    if(!items || !items.length){ wrap.innerHTML = '<div class="muted" style="padding:0 18px 16px">Sem movimentações ainda.</div>'; return; }
     for(const it of items){
       const sub = [fmt(it.motorista), fmt(it.seguranca)].filter(Boolean).join(' • ');
       const el = document.createElement('div');
@@ -134,49 +135,52 @@
     }
   }
 
-  // --- ações rápidas ---
+  // Ações
   function openSaida(){
-    // Exemplo simples de fluxo: coletar dados e enviar
-    google.script.run.withSuccessHandler(() => {
-      alert('Saída registrada!');
-      loadHome();
-    }).withFailureHandler(e => alert('Erro: ' + e.message))
-    .submitSaida({
-      veiculo: prompt('Veículo:' ) || '',
-      motorista: prompt('Motorista:') || '',
-      seguranca: prompt('Segurança:') || '',
-      kmSaida: Number(prompt('Km Saída:') || 0),
-      destino: prompt('Destino (opcional):') || ''
-    });
-  }
-  function openEntrada(){
-    alert('Tela de Entrada ficará pronta na próxima etapa 😉');
-  }
+    // (rápido) prompts — se quiser, faço um modal bonitão na próxima etapa.
+    const veiculo   = prompt('Veículo:') || '';
+    const motorista = prompt('Motorista:') || '';
+    const seguranca = prompt('Segurança:') || '';
+    const kmSaida   = Number(prompt('Km Saída:') || 0);
+    const destino   = prompt('Destino (opcional):') || '';
 
-  // --- ping (diagnóstico de conexão com Apps Script) ---
-  function ping(){
-    try{
-      google.script.run.withSuccessHandler(msg => alert(msg)).ping();
-    }catch(e){
-      alert('Abra esta página pela URL do Web App do Apps Script. (google.script.run não está disponível fora do GAS)');
+    if(!veiculo || !motorista || !seguranca || !kmSaida){
+      alert('Preencha Veículo, Motorista, Segurança e Km Saída.'); return;
     }
+    google.script.run
+      .withSuccessHandler(()=>{ alert('Saída registrada!'); loadHome(); })
+      .withFailureHandler(e=>alert('Erro: ' + e.message))
+      .submitSaida({ veiculo, motorista, seguranca, kmSaida, destino });
   }
 
-  // --- carregar home ---
+  function openEntrada(){
+    const veiculo   = prompt('Veículo:') || '';
+    const kmRetorno = Number(prompt('Km Retorno:') || 0);
+    if(!veiculo || !kmRetorno){ alert('Informe Veículo e Km Retorno.'); return; }
+    google.script.run
+      .withSuccessHandler((res)=>{ alert(res.message + `\nKm Rodado: ${res.kmRodado}\nData Retorno: ${res.dataRetorno}`); loadHome(); })
+      .withFailureHandler(e=>alert('Erro: ' + e.message))
+      .submitEntrada({ veiculo, kmRetorno });
+  }
+
+  // Diagnóstico
+  function ping(){
+    try{ google.script.run.withSuccessHandler(alert).ping(); }
+    catch(e){ alert('Abra pela URL do Web App do Apps Script.'); }
+  }
+
+  // Home
   function loadHome(){
     const pill = document.getElementById('pillStatus');
     google.script.run
-      .withSuccessHandler(data => {
+      .withSuccessHandler(data=>{
         document.getElementById('qtyVeiculos').textContent = data.totalVeiculos ?? 0;
         document.getElementById('onlineText').textContent = data.online ? 'ONLINE' : 'OFFLINE';
         pill.style.background = data.online ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)';
-        pill.style.color = data.online ? '#10b981' : '#ef4444';
+        pill.style.color      = data.online ? '#10b981' : '#ef4444';
         renderRecentes(data.recentes);
       })
-      .withFailureHandler(err => {
-        console.error(err);
-        alert('Falha ao carregar Home: ' + (err && err.message ? err.message : err));
-      })
+      .withFailureHandler(err=>{ console.error(err); alert('Falha ao carregar Home: ' + (err && err.message ? err.message : err)); })
       .getHomeData();
   }
   window.addEventListener('load', loadHome);
