@@ -1,48 +1,185 @@
 
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frota Pro II | Gestão Operacional</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #020617; 
-            margin: 0; 
-            padding: 0; 
-            color: #f8fafc;
-            overflow-x: hidden;
-        }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        
-        .btn-active:active { transform: scale(0.96); }
-    </style>
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "@google/genai": "https://esm.sh/@google/genai@1.37.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Frota Pro — Controle de Veículos</title>
+<style>
+  :root{
+    --bg:#0f0f14; --card:#fff; --muted:#98a2b3; --accent:#22c55e; --alert:#ef4444; --soft:#edf1f7;
+    --shadow:0 10px 24px rgba(2,6,23,.12);
   }
-}
-</script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:#0b1020;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  .phone{width:420px;max-width:100%;height:840px;max-height:94vh;margin:20px auto;background:linear-gradient(180deg,#f7f9fc 0%,#f3f6fb 100%);
+    border-radius:28px;box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.25);overflow:hidden}
+  .scroll{height:100%;overflow:auto}
+  .banner{position:relative;margin:18px;border-radius:24px;height:180px;overflow:hidden;box-shadow:var(--shadow);
+    background:#101827 url('https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat}
+  .banner::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(2,6,23,.55) 0%,rgba(2,6,23,0) 60%)}
+  .banner-top{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;z-index:2}
+  .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.03em;
+    background:rgba(34,197,94,.12);color:#10b981;border:1px solid rgba(16,185,129,.35);backdrop-filter:blur(4px)}
+  .icon-btn{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.35);display:grid;place-items:center;background:rgba(255,255,255,.2);color:#fff;cursor:pointer}
+  .banner-title{position:absolute;left:18px;bottom:18px;z-index:2;color:#e6f6ff}
+  .banner-title h1{margin:0;font-size:28px;letter-spacing:.18em;font-weight:800}
+  .banner-sub{margin-top:6px;font-size:12px;color:#a5f3fc;font-weight:700;letter-spacing:.05em}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:8px 18px 0}
+  .action{background:#fff;border:1px solid #eef0f5;border-radius:18px;padding:18px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;cursor:pointer}
+  .action:active{transform:scale(.98)}
+  .ico{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:18px;font-weight:800}
+  .out{background:#fee2e2;color:#ef4444;border:1px solid #fecaca}
+  .in{ background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
+  .txt{font-weight:800;color:#0b1020}
+  .muted{color:#64748b}
+
+  .section{padding:16px 18px 6px}
+  .section h3{margin:12px 0 6px;color:#94a3b8;font-size:12px;letter-spacing:.18em;font-weight:800;display:flex;gap:10px;align-items:center}
+  .list{display:grid;gap:12px;padding:0 18px 18px}
+  .item{background:#fff;border:1px solid #eef0f5;border-radius:18px;padding:14px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center}
+  .veh-ico{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:#ecfeff;color:#0891b2;border:1px solid #cffafe}
+  .item-main{flex:1}
+  .item-title{font-weight:800;color:#0b1020}
+  .item-sub{font-size:12px;color:#64748b;margin-top:4px}
+  .status{font-size:11px;font-weight:800;border-radius:999px;padding:6px 10px;letter-spacing:.04em;border:1px solid transparent}
+  .ok{background:#eafff4;color:#16a34a;border-color:#bbf7d0}
+  .warn{background:#fff5f5;color:#ef4444;border-color:#fecaca}
+  .footer{text-align:center;color:#c0c7d2;font-size:11px;padding:8px 0 16px;letter-spacing:.35em;font-weight:700}
+</style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel" data-presets="typescript,react" data-type="module" src="index.tsx"></script>
+  <div class="phone">
+    <div class="scroll">
+      <!-- BANNER -->
+      <section class="banner">
+        <div class="banner-top">
+          <div id="pillStatus" class="pill"><span style="width:8px;height:8px;border-radius:999px;background:#10b981;display:inline-block"></span><span id="onlineText">ONLINE</span></div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <div class="icon-btn" title="Atualizar" onclick="loadHome()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M21 5v6h-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="icon-btn" title="Testar conexão" onclick="ping()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4" fill="#fff"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="banner-title">
+          <h1>FROTA PRO</h1>
+          <div class="banner-sub"><span id="qtyVeiculos">0</span> VEÍCULOS NO SISTEMA</div>
+        </div>
+      </section>
+
+      <!-- AÇÕES -->
+      <section class="grid">
+        <div class="action" onclick="openSaida()">
+          <div class="ico out">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 6H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M13 16l5-4-5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="txt">REGISTRAR SAÍDA<br><span class="muted" style="font-weight:600">Iniciar deslocamento</span></div>
+        </div>
+        <div class="action" onclick="openEntrada()">
+          <div class="ico in">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6h4a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11 16l-5-4 5-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="txt">REGISTRAR ENTRADA<br><span class="muted" style="font-weight:600">Concluir deslocamento</span></div>
+        </div>
+      </section>
+
+      <!-- MOVIMENTAÇÃO RECENTE -->
+      <section class="section">
+        <h3>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="7" height="7" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
+          </svg>
+          MOVIMENTAÇÃO RECENTE
+        </h3>
+      </section>
+      <div id="listaRecentes" class="list"></div>
+      <div class="footer">BY ULBACH</div>
+    </div>
+  </div>
+
+<script>
+  // --- helpers ---
+  function fmt(v){ return (v||'').toString().trim(); }
+  function renderRecentes(items){
+    const wrap = document.getElementById('listaRecentes');
+    wrap.innerHTML = '';
+    if(!items || !items.length){
+      wrap.innerHTML = '<div class="muted" style="padding:0 18px 16px">Sem movimentações ainda.</div>';
+      return;
+    }
+    for(const it of items){
+      const sub = [fmt(it.motorista), fmt(it.seguranca)].filter(Boolean).join(' • ');
+      const el = document.createElement('div');
+      el.className = 'item';
+      el.innerHTML = `
+        <div class="veh-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M3 13l2-4a3 3 0 0 1 2.7-1.7H14a3 3 0 0 1 2.7 1.7l2 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="7.5" cy="16.5" r="1.7" fill="currentColor"/><circle cx="16.5" cy="16.5" r="1.7" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="item-main">
+          <div class="item-title">${fmt(it.veiculo).toUpperCase()}</div>
+          <div class="item-sub">${sub || '&nbsp;'}</div>
+        </div>
+        <div class="status ${it.corStatus==='ok'?'ok':'warn'}">${it.status}</div>`;
+      wrap.appendChild(el);
+    }
+  }
+
+  // --- ações rápidas ---
+  function openSaida(){
+    // Exemplo simples de fluxo: coletar dados e enviar
+    google.script.run.withSuccessHandler(() => {
+      alert('Saída registrada!');
+      loadHome();
+    }).withFailureHandler(e => alert('Erro: ' + e.message))
+    .submitSaida({
+      veiculo: prompt('Veículo:' ) || '',
+      motorista: prompt('Motorista:') || '',
+      seguranca: prompt('Segurança:') || '',
+      kmSaida: Number(prompt('Km Saída:') || 0),
+      destino: prompt('Destino (opcional):') || ''
+    });
+  }
+  function openEntrada(){
+    alert('Tela de Entrada ficará pronta na próxima etapa 😉');
+  }
+
+  // --- ping (diagnóstico de conexão com Apps Script) ---
+  function ping(){
+    try{
+      google.script.run.withSuccessHandler(msg => alert(msg)).ping();
+    }catch(e){
+      alert('Abra esta página pela URL do Web App do Apps Script. (google.script.run não está disponível fora do GAS)');
+    }
+  }
+
+  // --- carregar home ---
+  function loadHome(){
+    const pill = document.getElementById('pillStatus');
+    google.script.run
+      .withSuccessHandler(data => {
+        document.getElementById('qtyVeiculos').textContent = data.totalVeiculos ?? 0;
+        document.getElementById('onlineText').textContent = data.online ? 'ONLINE' : 'OFFLINE';
+        pill.style.background = data.online ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)';
+        pill.style.color = data.online ? '#10b981' : '#ef4444';
+        renderRecentes(data.recentes);
+      })
+      .withFailureHandler(err => {
+        console.error(err);
+        alert('Falha ao carregar Home: ' + (err && err.message ? err.message : err));
+      })
+      .getHomeData();
+  }
+  window.addEventListener('load', loadHome);
+</script>
 </body>
 </html>
