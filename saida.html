@@ -6,7 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Registrar Saída — Frota Pro</title>
 <style>
-  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --accent:#16a34a; --shadow:0 8px 20px rgba(2,6,23,.10)}
+  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --accent:#16a34a; --alert:#dc2626; --shadow:0 8px 20px rgba(2,6,23,.10) }
+  *{box-sizing:border-box}
   body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:#0b1020}
   .phone{width:420px;max-width:100%;margin:20px auto;background:#fff;border-radius:22px;box-shadow:0 16px 40px rgba(0,0,0,.15);min-height:90vh;overflow:hidden}
   .wrap{padding:18px}
@@ -14,15 +15,21 @@
   .back{width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;display:grid;place-items:center;cursor:pointer;background:#fff}
   h1{margin:0;font-size:20px;color:#0f172a}
   .card{margin-top:14px;border:1px solid #e2e8f0;border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
-  label{display:block;margin:12px 0 6px;font-weight:700;color:#0b1020}
+  label{display:block;margin:10px 0 6px;font-weight:700;color:#0b1020}
   select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+  .grid{display:grid;gap:12px}
+  /* 2 colunas em telas normais; empilha no muito estreito */
+  @media (min-width:380px){ .grid{grid-template-columns:1fr 1fr} }
+  /* A ordem visual segue a ordem DOM (pedida) */
+  .full{grid-column:1 / -1}
   .row{display:flex;gap:12px}
-  .row > div{flex:1}
-  .btn{margin-top:18px;width:100%;padding:12px;border:0;border-radius:12px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer}
+  .btn{margin-top:6px;width:100%;padding:12px;border:0;border-radius:12px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer}
   .btn:disabled{opacity:.6;cursor:wait}
   .muted{color:#64748b;font-size:12px;margin-top:8px}
   .msg{margin-top:12px;font-weight:700}
-  .ok{color:#16a34a}.err{color:#dc2626}
+  .ok{color:#16a34a}.err{color:var(--alert)}
+  .hint-danger{color:var(--alert);font-size:12px;margin-top:6px}
+  .danger-border{border-color:var(--alert)!important}
 </style>
 </head>
 <body>
@@ -36,30 +43,34 @@
     </div>
 
     <div class="card">
-      <div class="row">
+      <!-- ORDEM EXATA: Veículo, Motorista, KM Saída, Destino, Segurança -->
+      <div class="grid">
         <div>
           <label for="veiculo">Veículo</label>
-          <select id="veiculo"><option>Carregando...</option></select>
+          <select id="veiculo"><option value="">Selecione o veículo</option></select>
         </div>
+
         <div>
           <label for="motorista">Motorista</label>
-          <select id="motorista"><option>Carregando...</option></select>
+          <select id="motorista"><option value="">Selecione o motorista</option></select>
         </div>
-      </div>
 
-      <div class="row">
-        <div>
-          <label for="seguranca">Segurança</label>
-          <select id="seguranca"><option>Carregando...</option></select>
-        </div>
         <div>
           <label for="kmSaida">Km Saída</label>
           <input id="kmSaida" type="number" min="0" step="1" placeholder="Ex.: 15700" />
+          <div id="kmAtualHint" class="hint-danger" style="display:none"></div>
+        </div>
+
+        <div>
+          <label for="destino">Destino (opcional)</label>
+          <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y" />
+        </div>
+
+        <div class="full">
+          <label for="seguranca">Segurança</label>
+          <select id="seguranca"><option value="">Selecione o segurança</option></select>
         </div>
       </div>
-
-      <label for="destino">Destino (opcional)</label>
-      <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y" />
 
       <button id="btnEnviar" class="btn">Gravar Saída</button>
       <div class="muted">Listas vêm da aba <b>Listagem2</b>. Data/hora é registrada automaticamente no formato <i>dd/MM/yyyy HH:mm:ss</i>.</div>
@@ -72,32 +83,37 @@
   // ===== CONFIG =====
   const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
 
+  // ===== STATE =====
+  let KM_ATUAL = 0;
+
   // ===== HELPERS HTTP =====
-  async function apiGet(route){
-    const res = await fetch(`${API_URL}?route=${encodeURIComponent(route)}&t=${Date.now()}`, { method:'GET' });
-    if(!res.ok) throw new Error('GET '+res.status);
+  async function apiGet(route, params = {}){
+    const usp = new URLSearchParams({ route, t: Date.now(), ...params });
+    const res = await fetch(`${API_URL}?${usp.toString()}`, { method:'GET' });
+    if(!res.ok){ const txt = await res.text().catch(()=> ''); throw new Error(`GET ${res.status}: ${txt}`); }
     return res.json();
   }
-  async function apiPost(route, data){
-    const res = await fetch(`${API_URL}?route=${encodeURIComponent(route)}&t=${Date.now()}`, {
+  async function apiPost(route, data = {}){
+    const usp = new URLSearchParams({ route, t: Date.now() });
+    const res = await fetch(`${API_URL}?${usp.toString()}`, {
       method:'POST',
-      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // evita preflight CORS
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
       body: JSON.stringify(data||{})
     });
     const txt = await res.text().catch(()=> '');
-    let json = {}; try{ json = JSON.parse(txt); }catch(e){}
-    if(!res.ok || json?.ok === false) throw new Error(json?.error || txt || 'Erro no POST');
+    let json = {}; try{ json = JSON.parse(txt); }catch{}
+    if(!res.ok || json?.ok===false) throw new Error(json?.error || txt);
     return json;
   }
 
   // ===== UI HELPERS =====
-  function setMsg(text, ok){ const el = document.getElementById('msg'); el.textContent = text || ''; el.className='msg '+(ok?'ok':'err'); }
-  function fillSelect(el, list, placeholder){
+  function setMsg(text, ok){ const el = document.getElementById('msg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+  function fillSelect(el, list = [], placeholder = 'Selecione...'){
     el.innerHTML = '';
-    const opt0 = document.createElement('option');
-    opt0.value = ''; opt0.textContent = placeholder; el.appendChild(opt0);
-    (list||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+    const o = document.createElement('option'); o.value=''; o.textContent=placeholder; el.appendChild(o);
+    (list||[]).forEach(v=>{ const op=document.createElement('option'); op.value=v; op.textContent=v; el.appendChild(op); });
   }
+  const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
 
   // ===== PAGE LOGIC =====
   async function loadLists(){
@@ -109,31 +125,78 @@
     }catch(e){ setMsg('Erro ao carregar listas: '+e.message, false); }
   }
 
+  async function onChangeVeiculo(){
+    const veiculoSel = (document.getElementById('veiculo').value || '').trim();
+    const hint = document.getElementById('kmAtualHint');
+    const kmInput = document.getElementById('kmSaida');
+
+    KM_ATUAL = 0;
+    hint.style.display = 'none';
+    kmInput.classList.remove('danger-border');
+
+    if(!veiculoSel) return;
+
+    try{
+      const r = await apiGet('kmAtual', { veiculo: veiculoSel });
+      KM_ATUAL = Number(r?.kmAtual || 0);
+      hint.textContent = `Km atual do veículo: ${fmtKm(KM_ATUAL)}`;
+      hint.style.display = 'block';
+      // Se já tem valor digitado, revalida
+      validateKm();
+    }catch(e){
+      hint.textContent = 'Não foi possível obter o Km atual. Tente novamente.';
+      hint.style.display = 'block';
+    }
+  }
+
+  function validateKm(){
+    const kmInput = document.getElementById('kmSaida');
+    const v = Number((kmInput.value || '').trim());
+    const btn = document.getElementById('btnEnviar');
+
+    if(Number.isFinite(v) && v < KM_ATUAL){
+      kmInput.classList.add('danger-border');
+      setMsg(`O Km Saída informado (${fmtKm(v)}) é MENOR que o Km atual do veículo (${fmtKm(KM_ATUAL)}). 
+Por favor, confirme com o Segurança antes de prosseguir.`, false);
+      btn.disabled = true;
+      return false;
+    } else {
+      kmInput.classList.remove('danger-border');
+      setMsg('', true);
+      btn.disabled = false;
+      return true;
+    }
+  }
+
   async function submit(){
+    // valida campos obrigatórios
     const veiculo   = (document.getElementById('veiculo').value||'').trim();
     const motorista = (document.getElementById('motorista').value||'').trim();
     const seguranca = (document.getElementById('seguranca').value||'').trim();
     const kmSaida   = Number((document.getElementById('kmSaida').value||'').trim());
     const destino   = (document.getElementById('destino').value||'').trim();
 
-    if(!veiculo || !motorista || !seguranca || !kmSaida){
+    if(!veiculo || !motorista || !seguranca || !Number.isFinite(kmSaida)){
       setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return;
     }
+    if(!validateKm()) return;
 
-    const btn = document.getElementById('btnEnviar');
-    btn.disabled = true; setMsg('Enviando...', true);
+    const btn = document.getElementById('btnEnviar'); btn.disabled = true; setMsg('Enviando...', true);
     try{
       const r = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
       setMsg(r.message + (r.timestamp ? ` — ${r.timestamp}` : ''), true);
       setTimeout(()=> location.href = './', 1200);
     }catch(e){
       setMsg('Erro: ' + e.message, false);
-    }finally{
       btn.disabled = false;
     }
   }
 
+  // events
   document.getElementById('btnEnviar').addEventListener('click', submit);
+  document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
+  document.getElementById('kmSaida').addEventListener('input', validateKm);
+
   window.addEventListener('load', loadLists);
 </script>
 </body>
