@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -26,8 +25,6 @@
   .msg{margin-top:12px;font-weight:700}
   .ok{color:var(--accent)} .err{color:var(--danger)}
   .muted{color:var(--muted);font-size:12px;margin-top:8px}
-  .row-inline{display:flex;align-items:center;gap:8px;margin-top:6px}
-  .row-inline label{margin:0;font-weight:600}
 </style>
 </head>
 <body>
@@ -50,10 +47,6 @@
         <select id="veiculo" required aria-required="true">
           <option value="">Carregando...</option>
         </select>
-        <div class="row-inline">
-          <input type="checkbox" id="ckShowBusy" />
-          <label for="ckShowBusy">Mostrar veículos em curso (somente leitura)</label>
-        </div>
       </div>
 
       <div class="field">
@@ -65,7 +58,6 @@
 
       <div class="field">
         <label for="kmSaida">Km Saída</label>
-        <!-- inputmode + min/step para mobile/validação -->
         <input id="kmSaida" type="number" inputmode="numeric" min="0" step="1" placeholder="Ex.: 15700" required aria-required="true" autocomplete="off" />
         <div id="kmAtualHint" class="hint-danger"></div>
       </div>
@@ -96,7 +88,7 @@
 <script>
   // ===== CONFIG =====
   const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
-  const HTTP_TIMEOUT_MS = 15000; // 15s
+  const HTTP_TIMEOUT_MS = 15000;
 
   // ===== STATE =====
   let KM_ATUAL = NaN;
@@ -105,17 +97,12 @@
   let OCUPADOS = [];
   let inFlight = false;
 
-  // ===== HTTP (com timeout e erros claros) =====
+  // ===== HTTP helpers =====
   async function withTimeout(promise, ms, controller){
     const t = setTimeout(() => controller.abort('timeout'), ms);
-    try { return await promise; }
-    finally { clearTimeout(t); }
+    try { return await promise; } finally { clearTimeout(t); }
   }
-
-  function buildQuery(params){
-    const usp = new URLSearchParams(params);
-    return usp.toString();
-  }
+  function buildQuery(params){ return new URLSearchParams(params).toString(); }
 
   async function apiGet(route, params = {}){
     const ctrl = new AbortController();
@@ -127,13 +114,8 @@
       if (err?.name === 'AbortError') throw new Error('Tempo de resposta excedido. Verifique sua conexão e tente novamente.');
       throw new Error('Falha de rede ao consultar o servidor.');
     }
-    const txt = await res.text().catch(()=>'');
-    let json = {};
-    try { json = JSON.parse(txt); } catch {}
-    if(!res.ok){
-      const msg = json?.error || txt || `Erro HTTP ${res.status}`;
-      throw new Error(msg);
-    }
+    const txt = await res.text().catch(()=>''); let json={}; try{ json=JSON.parse(txt);}catch{}
+    if(!res.ok){ throw new Error(json?.error || txt || `Erro HTTP ${res.status}`); }
     return json;
   }
 
@@ -152,34 +134,20 @@
       if (err?.name === 'AbortError') throw new Error('Tempo de resposta excedido. Verifique sua conexão e tente novamente.');
       throw new Error('Falha de rede ao enviar os dados.');
     }
-    const txt = await res.text().catch(()=>'');
-    let json = {};
-    try { json = JSON.parse(txt); } catch {}
-    if(!res.ok || json?.ok === false){
-      const msg = json?.error || txt || 'Erro ao gravar (POST).';
-      throw new Error(msg);
-    }
+    const txt = await res.text().catch(()=>''); let json={}; try{ json=JSON.parse(txt);}catch{}
+    if(!res.ok || json?.ok===false) throw new Error(json?.error || txt || 'Erro ao gravar (POST).');
     return json;
   }
 
-  // ===== UI HELPERS =====
-  function setMsg(text, ok){
-    const el = document.getElementById('msg');
-    el.textContent = text || '';
-    el.className = 'msg ' + (ok ? 'ok' : 'err');
-  }
+  // ===== UI helpers =====
+  function setMsg(text, ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
   const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
+  function getSelectValue(id){ return (document.getElementById(id).value||'').trim(); }
 
-  function setFormDisabled(disabled){
-    ['veiculo','motorista','kmSaida','destino','seguranca','btnEnviar','ckShowBusy']
-      .forEach(id => { const el = document.getElementById(id); if(el) el.disabled = disabled; });
-  }
-
-  function getSelectValue(id){
-    return (document.getElementById(id).value || '').trim();
-  }
-
-  function fillVeiculosSelect(soDisponiveis = true, preselect = null){
+  // Popula veículos:
+  // - sempre mostra apenas DISPONÍVEIS
+  // - se houver pré-seleção na query e ele estiver em OCUPADOS, exibe esse único veículo em um optgroup (disabled)
+  function fillVeiculosSelect(preselect = null){
     const sel = document.getElementById('veiculo');
     sel.innerHTML = '';
     const opt0 = document.createElement('option');
@@ -188,52 +156,37 @@
     sel.appendChild(opt0);
 
     (DISPONIVEIS || []).forEach(v => {
+      const txt = String(v).trim();
       const o = document.createElement('option');
-      o.value = String(v).trim();
-      o.textContent = String(v).trim();
+      o.value = txt; o.textContent = txt;
       sel.appendChild(o);
     });
 
-    if(!soDisponiveis){
-      const grp = document.createElement('optgroup');
-      grp.label = 'Em curso (indisponíveis)';
-      (OCUPADOS || []).forEach(v => {
-        const o = document.createElement('option');
-        const txt = String(v).trim();
-        o.value = txt;
-        o.textContent = `${txt} (EM CURSO)`;
-        o.disabled = true;
-        grp.appendChild(o);
-      });
-      sel.appendChild(grp);
-    }
-
+    // Tratamento da exceção (pré-seleção de veículo ocupado)
     if(preselect){
-      sel.value = preselect;
-      if(sel.value !== preselect){
-        // Veículo pré-selecionado está em curso e estava oculto
-        document.getElementById('ckShowBusy').checked = true;
-        fillVeiculosSelect(false, preselect);
-        sel.value = preselect;
+      const ocupado = (OCUPADOS || []).map(String).map(s=>s.trim()).includes(preselect);
+      const disponivel = (DISPONIVEIS || []).map(String).map(s=>s.trim()).includes(preselect);
+      if(ocupado && !disponivel){
+        const grp = document.createElement('optgroup');
+        grp.label = 'Em curso (indisponível)';
+        const o = document.createElement('option');
+        o.value = preselect; o.textContent = `${preselect} (EM CURSO)`; o.disabled = true;
+        grp.appendChild(o);
+        sel.appendChild(grp);
       }
-      sel.dispatchEvent(new Event('change'));
+      sel.value = preselect; // se for ocupado, ficará selecionado (mas disabled) apenas como indicação
     }
-
-    // Habilitar/desabilitar botão enviar conforme seleção
-    validateForm();
   }
 
   // ===== PAGE LOGIC =====
   async function loadLists(){
     setMsg('Carregando listas...', true);
-    setFormDisabled(true);
     document.getElementById('btnEnviar').disabled = true;
     try{
       let L;
       try {
         L = await apiGet('listsAvail'); // preferencial
-      } catch (e) {
-        // fallback p/ compatibilidade
+      } catch {
         const base = await apiGet('lists');
         L = {
           veiculosDisponiveis: base.veiculos || [],
@@ -243,7 +196,6 @@
         };
       }
 
-      // Normalização defensiva
       DISPONIVEIS = Array.isArray(L.veiculosDisponiveis) ? L.veiculosDisponiveis : [];
       OCUPADOS    = Array.isArray(L.veiculosEmCurso)     ? L.veiculosEmCurso     : [];
       const motoristas = Array.isArray(L.motoristas) ? L.motoristas : [];
@@ -252,11 +204,8 @@
       const q = new URLSearchParams(location.search);
       const pre = (q.get('veiculo') || '').trim();
 
-      // Lista de veículos
-      document.getElementById('ckShowBusy').checked = false;
-      fillVeiculosSelect(true, pre);
+      fillVeiculosSelect(pre);
 
-      // Demais listas
       document.getElementById('motorista').innerHTML =
         '<option value="">Selecione o motorista</option>' +
         motoristas.map(v => `<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
@@ -265,19 +214,14 @@
         '<option value="">Selecione o segurança</option>' +
         segurancas.map(v => `<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
 
-      // Foco inteligente
-      if(!pre){
-        document.getElementById('veiculo').focus();
-      }else{
-        document.getElementById('motorista').focus();
-      }
+      if(!pre){ document.getElementById('veiculo').focus(); }
+      else { document.getElementById('motorista').focus(); }
 
       setMsg('', true);
     }catch(e){
       setMsg('Erro ao carregar listas: ' + (e?.message || e), false);
     }finally{
-      setFormDisabled(false);
-      document.getElementById('btnEnviar').disabled = true; // só libera após validar
+      document.getElementById('btnEnviar').disabled = true; // libera após validação
     }
   }
 
@@ -290,8 +234,8 @@
     EM_CURSO = false;
     KM_ATUAL = NaN;
 
-    warn.style.display = 'none';
-    hint.style.display = 'none';
+    warn.style.display='none';
+    hint.style.display='none';
     kmI.classList.remove('danger');
     setMsg('', true);
 
@@ -300,16 +244,14 @@
       return;
     }
 
-    // Enquanto consulta status, travar apenas o essencial
     document.getElementById('btnEnviar').disabled = true;
 
     try{
       const st = await apiGet('statusVeiculo', { veiculo });
       EM_CURSO = !!st?.emCurso;
       KM_ATUAL = Number(st?.kmAtual);
-      if (!Number.isFinite(KM_ATUAL)) KM_ATUAL = NaN;
+      if(!Number.isFinite(KM_ATUAL)) KM_ATUAL = NaN;
 
-      // Exibir sempre a info do KM atual, se houver
       hint.textContent = Number.isFinite(KM_ATUAL)
         ? `Km atual do veículo: ${fmtKm(KM_ATUAL)}`
         : 'Km atual do veículo não disponível.';
@@ -317,14 +259,11 @@
 
       if(EM_CURSO){
         warn.style.display='block';
-        // Bloqueia campos exceto seleção de veículo e toggle
         ['motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
           const el = document.getElementById(id); if(el) el.disabled = true;
         });
         document.getElementById('veiculo').disabled = false;
-        document.getElementById('ckShowBusy').disabled = false;
       }else{
-        // Reabilita campos e valida
         ['motorista','kmSaida','destino','seguranca'].forEach(id=>{
           const el = document.getElementById(id); if(el) el.disabled = false;
         });
@@ -339,7 +278,6 @@
 
   function sanitizeKmInput(){
     const kmI = document.getElementById('kmSaida');
-    // Em alguns browsers o type=number permite caracteres estranhos via copiar/colar
     const raw = String(kmI.value || '');
     const onlyDigits = raw.replace(/[^\d]/g, '');
     if (raw !== onlyDigits) kmI.value = onlyDigits;
@@ -351,24 +289,18 @@
     const v = Number((kmI.value || '').trim());
     const btn = document.getElementById('btnEnviar');
 
-    if(EM_CURSO){
-      btn.disabled = true;
-      return false;
-    }
+    if(EM_CURSO){ btn.disabled = true; return false; }
 
-    // Se KM_ATUAL não é conhecido, apenas validar não-negativo
     if(!Number.isFinite(v) || v < 0){
       kmI.classList.add('danger');
       setMsg('Informe um Km Saída válido (número inteiro ≥ 0).', false);
-      btn.disabled = true;
-      return false;
+      btn.disabled = true; return false;
     }
 
     if(Number.isFinite(KM_ATUAL) && v < KM_ATUAL){
       kmI.classList.add('danger');
       setMsg(`O Km Saída (${v.toLocaleString('pt-BR')}) é MENOR que o Km atual (${fmtKm(KM_ATUAL)}). Oriente o Segurança e corrija.`, false);
-      btn.disabled = true;
-      return false;
+      btn.disabled = true; return false;
     }
 
     kmI.classList.remove('danger');
@@ -381,7 +313,6 @@
     const motorista = getSelectValue('motorista');
     const seguranca = getSelectValue('seguranca');
     const kmOK = validateKm();
-
     const canSubmit = !!veiculo && !!motorista && !!seguranca && kmOK && !EM_CURSO && !inFlight;
     document.getElementById('btnEnviar').disabled = !canSubmit;
   }
@@ -394,54 +325,39 @@
     const destino   = (document.getElementById('destino').value || '').trim();
 
     sanitizeKmInput();
-    const kmStr = (document.getElementById('kmSaida').value || '').trim();
-    const kmSaida = Number(kmStr);
+    const kmSaida = Number((document.getElementById('kmSaida').value || '').trim());
 
-    if(EM_CURSO){
-      setMsg('Veículo NÃO disponível: há uma saída em curso.', false);
-      return;
-    }
-    if(!veiculo || !motorista || !seguranca || !Number.isFinite(kmSaida)){
-      setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false);
-      return;
-    }
-    if(!validateKm()){
-      return;
-    }
+    if(EM_CURSO){ setMsg('Veículo NÃO disponível: há uma saída em curso.', false); return; }
+    if(!veiculo || !motorista || !seguranca || !Number.isFinite(kmSaida)){ setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return; }
+    if(!validateKm()) return;
 
     inFlight = true;
-    setFormDisabled(true);
+    ['veiculo','motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.disabled = true;
+    });
     setMsg('Enviando...', true);
 
     try{
       const r = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
-      const stamp = r?.timestamp ? ` — ${r.timestamp}` : '';
-      setMsg((r?.message || 'Saída registrada com sucesso!') + stamp, true);
+      setMsg((r?.message || 'Saída registrada com sucesso!') + (r?.timestamp ? ` — ${r.timestamp}` : ''), true);
       setTimeout(() => { location.href = './'; }, 1200);
     }catch(e){
       setMsg('Erro: ' + (e?.message || e), false);
-      setFormDisabled(false);
-      // manter o botão desabilitado se o form estiver inválido
+      ['veiculo','motorista','kmSaida','destino','seguranca'].forEach(id=>{
+        const el = document.getElementById(id); if(el) el.disabled = false;
+      });
       validateForm();
     }finally{
       inFlight = false;
     }
   }
 
-  // ===== EVENTOS =====
   document.getElementById('btnEnviar').addEventListener('click', submit);
   document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
-  document.getElementById('kmSaida').addEventListener('input', () => { validateForm(); });
+  document.getElementById('kmSaida').addEventListener('input', validateForm);
   document.getElementById('motorista').addEventListener('change', validateForm);
   document.getElementById('seguranca').addEventListener('change', validateForm);
-  document.getElementById('ckShowBusy').addEventListener('change', (e) => {
-    const showBusy = !!e.target.checked;
-    // preserva seleção atual, se possível
-    const current = getSelectValue('veiculo');
-    fillVeiculosSelect(!showBusy, current || null);
-  });
 
-  // Enter para submeter quando possível
   document.addEventListener('keydown', (ev) => {
     if(ev.key === 'Enter'){
       const btn = document.getElementById('btnEnviar');
