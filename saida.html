@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -5,370 +6,312 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Registrar Saída — Frota Pro</title>
 <style>
-  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --text:#0b1020; --accent:#16a34a; --danger:#dc2626; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12) }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
-  .phone{width:420px;max-width:100%;min-height:90vh;margin:20px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
-  .wrap{padding:18px}
-  .top{display:flex;align-items:center;gap:10px}
-  .back{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;background:#fff}
-  h1{margin:0;font-size:20px;color:#0f172a}
-  .card{margin-top:14px;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
-  .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
-  label{display:block;margin:12px 0 6px;font-weight:700}
-  select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
-  .field{margin-bottom:6px}
-  .hint-danger{color:var(--danger);font-size:12px;margin-top:6px;display:none}
-  .danger{border-color:var(--danger)!important}
-  .btn{margin-top:10px;width:100%;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .msg{margin-top:12px;font-weight:700}
-  .ok{color:var(--accent)} .err{color:var(--danger)}
-  .muted{color:var(--muted);font-size:12px;margin-top:8px}
+ :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --text:#0b1020; --accent:#16a34a; --danger:#dc2626; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12) }
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+ .phone{width:420px;max-width:100%;min-height:90vh;margin:20px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
+ .wrap{padding:18px}
+ .top{display:flex;align-items:center;gap:10px}
+ .back{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;background:#fff}
+ h1{margin:0;font-size:20px;color:#0f172a}
+ .card{margin-top:14px;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
+ .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
+ label{display:block;margin:12px 0 6px;font-weight:700}
+ select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+ .field{margin-bottom:6px}
+ .hint-danger{color:var(--danger);font-size:12px;margin-top:6px;display:none}
+ .danger{border-color:var(--danger)!important}
+ .btn{margin-top:10px;width:100%;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
+ .btn:disabled{opacity:.6;cursor:not-allowed}
+ .msg{margin-top:12px;font-weight:700}
+ .ok{color:var(--accent)} .err{color:var(--danger)}
+ .muted{color:var(--muted);font-size:12px;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="phone">
-  <div class="wrap">
-    <div class="top">
-      <div class="back" onclick="history.back()" title="Voltar" role="button" aria-label="Voltar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 6l-6 6 6 6" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <h1>Registrar Saída</h1>
-    </div>
-
-    <div class="card">
-      <div id="warnCurso" class="banner-warn">VEÍCULO EM CURSO — conclua a ENTRADA antes de registrar nova SAÍDA.</div>
-
-      <div class="field">
-        <label for="veiculo">Veículo</label>
-        <select id="veiculo" required aria-required="true">
-          <option value="">Carregando...</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label for="motorista">Motorista</label>
-        <select id="motorista" required aria-required="true">
-          <option value="">Selecione o motorista</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label for="kmSaida">Km Saída</label>
-        <input id="kmSaida" type="number" inputmode="numeric" min="0" step="1" placeholder="Ex.: 15700" required aria-required="true" autocomplete="off" />
-        <div id="kmAtualHint" class="hint-danger"></div>
-      </div>
-
-      <div class="field">
-        <label for="destino">Destino (opcional)</label>
-        <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y" autocomplete="off" />
-      </div>
-
-      <div class="field">
-        <label for="seguranca">Segurança</label>
-        <select id="seguranca" required aria-required="true">
-          <option value="">Selecione o segurança</option>
-        </select>
-      </div>
-
-      <button id="btnEnviar" class="btn" disabled>Gravar Saída</button>
-
-      <div class="muted">
-        Listas vêm da aba <b>Listagem2</b>. Data/hora é registrada automaticamente no formato
-        <i>dd/MM/yyyy HH:mm:ss</i>.
-      </div>
-      <div id="msg" class="msg" aria-live="polite"></div>
-    </div>
+ <div class="wrap">
+  <div class="top">
+   <div class="back" onclick="history.back()" title="Voltar" role="button" aria-label="Voltar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   </div>
+   <h1>Registrar Saída</h1>
   </div>
+
+  <div class="card">
+   <div id="warnCurso" class="banner-warn">VEÍCULO EM CURSO — conclua a ENTRADA antes de registrar nova SAÍDA.</div>
+
+   <div class="field">
+    <label for="veiculo">Veículo</label>
+    <select id="veiculo" required aria-required="true">
+      <option value="">Carregando...</option>
+    </select>
+   </div>
+
+   <div class="field">
+    <label for="motorista">Motorista</label>
+    <select id="motorista" required aria-required="true">
+      <option value="">Selecione o motorista</option>
+    </select>
+   </div>
+
+   <div class="field">
+    <label for="kmSaida">Km Saída</label>
+    <input id="kmSaida" type="number" inputmode="numeric" min="0" step="1" placeholder="Ex.: 15700" required aria-required="true" autocomplete="off" />
+    <div id="kmAtualHint" class="hint-danger"></div>
+   </div>
+
+   <div class="field">
+    <label for="destino">Destino (opcional)</label>
+    <input id="destino" type="text" placeholder="Ex.: Fazenda X / Filial Y" autocomplete="off" />
+   </div>
+
+   <div class="field">
+    <label for="seguranca">Segurança</label>
+    <select id="seguranca" required aria-required="true">
+      <option value="">Selecione o segurança</option>
+    </select>
+   </div>
+
+   <button id="btnEnviar" class="btn" disabled>Gravar Saída</button>
+
+   <div class="muted">
+    Listas vêm da aba <b>Listagem2</b>. Data/hora é registrada automaticamente no formato
+    <i>dd/MM/yyyy HH:mm:ss</i>.
+   </div>
+   <div id="msg" class="msg" aria-live="polite"></div>
+  </div>
+ </div>
 </div>
 
 <script>
-  // ===== CONFIG =====
-  const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
-  const HTTP_TIMEOUT_MS = 15000;
+ // ===== CONFIG =====
+ const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
+ const HTTP_TIMEOUT_MS = 15000;
 
-  // ===== STATE =====
-  let KM_ATUAL = NaN;
-  let EM_CURSO = false;
-  let DISPONIVEIS = [];
-  let OCUPADOS = [];
-  let inFlight = false;
+ // ===== STATE =====
+ let KM_ATUAL = NaN;
+ let EM_CURSO = false;
+ let inFlight = false;
 
-  // ===== HTTP helpers =====
-  async function withTimeout(promise, ms, controller){
-    const t = setTimeout(() => controller.abort('timeout'), ms);
-    try { return await promise; } finally { clearTimeout(t); }
-  }
-  function buildQuery(params){ return new URLSearchParams(params).toString(); }
+ // ===== CACHE LOCAL INSTANTÂNEO =====
+ const BOOT_CACHE_KEY = 'fp_bootstrap_v1';
+ const BOOT_TTL_MS = 60 * 1000;
 
-  async function apiGet(route, params = {}){
-    const ctrl = new AbortController();
-    const url = `${API_URL}?${buildQuery({ route, t: Date.now(), ...params })}`;
-    let res;
-    try{
-      res = await withTimeout(fetch(url, { method:'GET', signal: ctrl.signal }), HTTP_TIMEOUT_MS, ctrl);
-    }catch(err){
-      if (err?.name === 'AbortError') throw new Error('Tempo de resposta excedido. Verifique sua conexão e tente novamente.');
-      throw new Error('Falha de rede ao consultar o servidor.');
-    }
-    const txt = await res.text().catch(()=>''); let json={}; try{ json=JSON.parse(txt);}catch{}
-    if(!res.ok){ throw new Error(json?.error || txt || `Erro HTTP ${res.status}`); }
-    return json;
-  }
+ function loadBootCache(){
+   try{
+     const raw = localStorage.getItem(BOOT_CACHE_KEY);
+     if(!raw) return null;
+     const o = JSON.parse(raw);
+     if(!o || !o.when || !o.data) return null;
+     if(Date.now() - o.when > BOOT_TTL_MS) return null;
+     return o.data;
+   }catch(e){ return null; }
+ }
 
-  async function apiPost(route, data = {}){
-    const ctrl = new AbortController();
-    const url = `${API_URL}?${buildQuery({ route, t: Date.now() })}`;
-    let res;
-    try{
-      res = await withTimeout(fetch(url, {
-        method:'POST',
-        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify(data || {}),
-        signal: ctrl.signal
-      }), HTTP_TIMEOUT_MS, ctrl);
-    }catch(err){
-      if (err?.name === 'AbortError') throw new Error('Tempo de resposta excedido. Verifique sua conexão e tente novamente.');
-      throw new Error('Falha de rede ao enviar os dados.');
-    }
-    const txt = await res.text().catch(()=>''); let json={}; try{ json=JSON.parse(txt);}catch{}
-    if(!res.ok || json?.ok===false) throw new Error(json?.error || txt || 'Erro ao gravar (POST).');
-    return json;
-  }
+ function hydrateListsSaida(lists){
+   const veics = (lists?.veiculosDisponiveis)||[];
+   const selV = document.getElementById('veiculo');
+   if (veics.length){
+     selV.innerHTML = '<option value="">Selecione o veículo</option>' + veics.map(v=>`<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
+   }else{
+     selV.innerHTML = '<option value="">(Sem veículos disponíveis)</option>';
+   }
+   document.getElementById('motorista').innerHTML =
+     '<option value="">Selecione o motorista</option>' + (lists?.motoristas||[]).map(v=>`<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
+   document.getElementById('seguranca').innerHTML =
+     '<option value="">Selecione o segurança</option>' + (lists?.segurancas||[]).map(v=>`<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
+ }
 
-  // ===== UI helpers =====
-  function setMsg(text, ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
-  const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
-  function getSelectValue(id){ return (document.getElementById(id).value||'').trim(); }
+ // aplica cache local (se existir) para render instantânea
+ const cachedBoot = loadBootCache();
+ if (cachedBoot?.listsAvail) hydrateListsSaida(cachedBoot.listsAvail);
 
-  // Popula veículos:
-  // - sempre mostra apenas DISPONÍVEIS
-  // - se houver pré-seleção na query e ele estiver em OCUPADOS, exibe esse único veículo em um optgroup (disabled)
-  function fillVeiculosSelect(preselect = null){
-    const sel = document.getElementById('veiculo');
-    sel.innerHTML = '';
-    const opt0 = document.createElement('option');
-    opt0.value = '';
-    opt0.textContent = 'Selecione o veículo';
-    sel.appendChild(opt0);
+ // recebe atualizações vindas da Home (BroadcastChannel)
+ if ('BroadcastChannel' in self) {
+   const bc = new BroadcastChannel('frota_pro_lists');
+   bc.onmessage = (ev) => {
+     if (ev?.data?.type === 'listsAvail') hydrateListsSaida(ev.data.payload);
+   };
+ }
 
-    (DISPONIVEIS || []).forEach(v => {
-      const txt = String(v).trim();
-      const o = document.createElement('option');
-      o.value = txt; o.textContent = txt;
-      sel.appendChild(o);
-    });
+ // ===== HTTP helpers =====
+ async function withTimeout(promise, ms, controller){
+   const t = setTimeout(() => controller.abort('timeout'), ms);
+   try { return await promise; } finally { clearTimeout(t); }
+ }
+ function buildQuery(params){ return new URLSearchParams(params).toString(); }
+ async function apiGet(route, params = {}){
+   const ctrl = new AbortController();
+   const url = `${API_URL}?${buildQuery({ route, t: Date.now(), ...params })}`;
+   let res;
+   try{
+     res = await withTimeout(fetch(url, { method:'GET', signal: ctrl.signal }), HTTP_TIMEOUT_MS, ctrl);
+   }catch(err){
+     if (err?.name === 'AbortError') throw new Error('Tempo de resposta excedido. Verifique sua conexão e tente novamente.');
+     throw new Error('Falha de rede ao consultar o servidor.');
+   }
+   const txt = await res.text().catch(()=> ''); let json={}; try{ json=JSON.parse(txt);}catch{}
+   if(!res.ok){ throw new Error(json?.error || txt || `Erro HTTP ${res.status}`); }
+   return json;
+ }
+ async function apiPost(route, data = {}){
+   const ctrl = new AbortController();
+   const url = `${API_URL}?${buildQuery({ route, t: Date.now() })}`;
+   let res;
+   try{
+     res = await withTimeout(fetch(url, {
+       method:'POST',
+       headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+       body: JSON.stringify(data || {}),
+       signal: ctrl.signal
+     }), HTTP_TIMEOUT_MS, ctrl);
+   }catch(err){
+     if (err?.name === 'AbortError') throw new Error('Tempo de resposta excedido. Verifique sua conexão e tente novamente.');
+     throw new Error('Falha de rede ao enviar os dados.');
+   }
+   const txt = await res.text().catch(()=> ''); let json={}; try{ json=JSON.parse(txt);}catch{}
+   if(!res.ok || json?.ok===false) throw new Error(json?.error || txt || 'Erro ao gravar (POST).');
+   return json;
+ }
 
-    // Tratamento da exceção (pré-seleção de veículo ocupado)
-    if(preselect){
-      const ocupado = (OCUPADOS || []).map(String).map(s=>s.trim()).includes(preselect);
-      const disponivel = (DISPONIVEIS || []).map(String).map(s=>s.trim()).includes(preselect);
-      if(ocupado && !disponivel){
-        const grp = document.createElement('optgroup');
-        grp.label = 'Em curso (indisponível)';
-        const o = document.createElement('option');
-        o.value = preselect; o.textContent = `${preselect} (EM CURSO)`; o.disabled = true;
-        grp.appendChild(o);
-        sel.appendChild(grp);
-      }
-      sel.value = preselect; // se for ocupado, ficará selecionado (mas disabled) apenas como indicação
-    }
-  }
+ // ===== UI helpers =====
+ function setMsg(text, ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
+ const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
 
-  // ===== PAGE LOGIC =====
-  async function loadLists(){
-    setMsg('Carregando listas...', true);
-    document.getElementById('btnEnviar').disabled = true;
-    try{
-      let L;
-      try {
-        L = await apiGet('listsAvail'); // preferencial
-      } catch {
-        const base = await apiGet('lists');
-        L = {
-          veiculosDisponiveis: base.veiculos || [],
-          veiculosEmCurso: [],
-          motoristas: base.motoristas || [],
-          segurancas: base.segurancas || []
-        };
-      }
+ // ===== LÓGICA =====
+ async function loadLists(){
+   try{
+     const L = await apiGet('listsAvail'); // sempre busca fresco em background
+     hydrateListsSaida(L);
+     // foco inicial
+     document.getElementById('veiculo').focus();
+   }catch(e){
+     setMsg('Erro ao carregar listas: '+(e?.message||e), false);
+   }
+ }
 
-      DISPONIVEIS = Array.isArray(L.veiculosDisponiveis) ? L.veiculosDisponiveis : [];
-      OCUPADOS    = Array.isArray(L.veiculosEmCurso)     ? L.veiculosEmCurso     : [];
-      const motoristas = Array.isArray(L.motoristas) ? L.motoristas : [];
-      const segurancas = Array.isArray(L.segurancas) ? L.segurancas : [];
+ async function onChangeVeiculo(){
+   const veiculo = (document.getElementById('veiculo').value||'').trim();
+   const warn = document.getElementById('warnCurso');
+   const hint = document.getElementById('kmAtualHint');
+   const kmI  = document.getElementById('kmSaida');
 
-      const q = new URLSearchParams(location.search);
-      const pre = (q.get('veiculo') || '').trim();
+   EM_CURSO = false; KM_ATUAL = NaN;
+   warn.style.display='none'; hint.style.display='none';
+   kmI.classList.remove('danger'); setMsg('', true);
+   document.getElementById('btnEnviar').disabled = true;
 
-      fillVeiculosSelect(pre);
+   if(!veiculo){ return; }
 
-      document.getElementById('motorista').innerHTML =
-        '<option value="">Selecione o motorista</option>' +
-        motoristas.map(v => `<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
+   try{
+     const st = await apiGet('statusVeiculo', { veiculo });
+     EM_CURSO = !!st?.emCurso;
+     KM_ATUAL = Number(st?.kmAtual);
+     if(!Number.isFinite(KM_ATUAL)) KM_ATUAL = NaN;
 
-      document.getElementById('seguranca').innerHTML =
-        '<option value="">Selecione o segurança</option>' +
-        segurancas.map(v => `<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
+     hint.textContent = Number.isFinite(KM_ATUAL)
+       ? `Km atual do veículo: ${fmtKm(KM_ATUAL)}`
+       : 'Km atual do veículo não disponível.';
+     hint.style.display = 'block';
 
-      if(!pre){ document.getElementById('veiculo').focus(); }
-      else { document.getElementById('motorista').focus(); }
+     if(EM_CURSO){
+       warn.style.display='block';
+       ['motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
+         const el = document.getElementById(id); if(el) el.disabled = true;
+       });
+       document.getElementById('veiculo').disabled = false;
+     }else{
+       ['motorista','kmSaida','destino','seguranca'].forEach(id=>{
+         const el = document.getElementById(id); if(el) el.disabled = false;
+       });
+       validateForm();
+     }
+   }catch(e){
+     hint.textContent = 'Não foi possível obter o status/Km atual.';
+     hint.style.display = 'block';
+   }
+ }
 
-      setMsg('', true);
-    }catch(e){
-      setMsg('Erro ao carregar listas: ' + (e?.message || e), false);
-    }finally{
-      document.getElementById('btnEnviar').disabled = true; // libera após validação
-    }
-  }
+ function sanitizeKmInput(){
+   const kmI = document.getElementById('kmSaida');
+   const raw = String(kmI.value || '');
+   const onlyDigits = raw.replace(/[^\d]/g, '');
+   if (raw !== onlyDigits) kmI.value = onlyDigits;
+ }
+ function validateKm(){
+   const kmI = document.getElementById('kmSaida');
+   sanitizeKmInput();
+   const v = Number((kmI.value||'').trim());
+   const btn = document.getElementById('btnEnviar');
 
-  async function onChangeVeiculo(){
-    const veiculo = getSelectValue('veiculo');
-    const warn = document.getElementById('warnCurso');
-    const hint = document.getElementById('kmAtualHint');
-    const kmI  = document.getElementById('kmSaida');
+   if(EM_CURSO){ btn.disabled = true; return false; }
+   if(!Number.isFinite(v) || v < 0){
+     kmI.classList.add('danger'); setMsg('Informe um Km Saída válido (número inteiro ≥ 0).', false);
+     btn.disabled = true; return false;
+   }
+   if(Number.isFinite(KM_ATUAL) && v < KM_ATUAL){
+     kmI.classList.add('danger');
+     setMsg(`O Km Saída (${v.toLocaleString('pt-BR')}) é MENOR que o Km atual (${fmtKm(KM_ATUAL)}). Oriente o Segurança e corrija.`, false);
+     btn.disabled = true; return false;
+   }
+   kmI.classList.remove('danger'); setMsg('', true); return true;
+ }
+ function validateForm(){
+   const veiculo = (document.getElementById('veiculo').value||'').trim();
+   const motorista = (document.getElementById('motorista').value||'').trim();
+   const seguranca = (document.getElementById('seguranca').value||'').trim();
+   const kmOK = validateKm();
+   const canSubmit = !!veiculo && !!motorista && !!seguranca && kmOK && !EM_CURSO && !inFlight;
+   document.getElementById('btnEnviar').disabled = !canSubmit;
+ }
 
-    EM_CURSO = false;
-    KM_ATUAL = NaN;
+ async function submit(){
+   if(inFlight) return;
+   const veiculo   = (document.getElementById('veiculo').value||'').trim();
+   const motorista = (document.getElementById('motorista').value||'').trim();
+   const seguranca = (document.getElementById('seguranca').value||'').trim();
+   const kmSaida   = Number((document.getElementById('kmSaida').value||'').trim());
+   const destino   = (document.getElementById('destino').value||'').trim();
 
-    warn.style.display='none';
-    hint.style.display='none';
-    kmI.classList.remove('danger');
-    setMsg('', true);
+   if(EM_CURSO){ setMsg('Veículo NÃO disponível: há uma saída em curso.', false); return; }
+   if(!veiculo || !motorista || !seguranca || !Number.isFinite(kmSaida)){ setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return; }
+   if(!validateKm()) return;
 
-    if(!veiculo){
-      validateForm();
-      return;
-    }
+   inFlight = true;
+   ['veiculo','motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
+     const el = document.getElementById(id); if(el) el.disabled = true;
+   });
+   setMsg('Enviando...', true);
 
-    document.getElementById('btnEnviar').disabled = true;
+   try{
+     const r = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
+     setMsg((r?.message || 'Saída registrada com sucesso!') + (r?.timestamp ? ` — ${r.timestamp}` : ''), true);
 
-    try{
-      const st = await apiGet('statusVeiculo', { veiculo });
-      EM_CURSO = !!st?.emCurso;
-      KM_ATUAL = Number(st?.kmAtual);
-      if(!Number.isFinite(KM_ATUAL)) KM_ATUAL = NaN;
+     // invalida cache local para forçar frescor na próxima tela
+     try{ localStorage.removeItem('fp_bootstrap_v1'); }catch(e){}
 
-      hint.textContent = Number.isFinite(KM_ATUAL)
-        ? `Km atual do veículo: ${fmtKm(KM_ATUAL)}`
-        : 'Km atual do veículo não disponível.';
-      hint.style.display = 'block';
+     setTimeout(()=> { location.href = './'; }, 1200);
+   }catch(e){
+     setMsg('Erro: ' + (e?.message || e), false);
+     ['veiculo','motorista','kmSaida','destino','seguranca'].forEach(id=>{
+       const el = document.getElementById(id); if(el) el.disabled = false;
+     });
+     validateForm();
+   }finally{
+     inFlight = false;
+   }
+ }
 
-      if(EM_CURSO){
-        warn.style.display='block';
-        ['motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
-          const el = document.getElementById(id); if(el) el.disabled = true;
-        });
-        document.getElementById('veiculo').disabled = false;
-      }else{
-        ['motorista','kmSaida','destino','seguranca'].forEach(id=>{
-          const el = document.getElementById(id); if(el) el.disabled = false;
-        });
-      }
-    }catch(e){
-      hint.textContent = 'Não foi possível obter o status/Km atual.';
-      hint.style.display = 'block';
-    }finally{
-      validateForm();
-    }
-  }
+ // eventos
+ document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
+ document.getElementById('kmSaida').addEventListener('input', validateForm);
+ document.getElementById('motorista').addEventListener('change', validateForm);
+ document.getElementById('seguranca').addEventListener('change', validateForm);
+ document.getElementById('btnEnviar').addEventListener('click', submit);
 
-  function sanitizeKmInput(){
-    const kmI = document.getElementById('kmSaida');
-    const raw = String(kmI.value || '');
-    const onlyDigits = raw.replace(/[^\d]/g, '');
-    if (raw !== onlyDigits) kmI.value = onlyDigits;
-  }
-
-  function validateKm(){
-    const kmI = document.getElementById('kmSaida');
-    sanitizeKmInput();
-    const v = Number((kmI.value || '').trim());
-    const btn = document.getElementById('btnEnviar');
-
-    if(EM_CURSO){ btn.disabled = true; return false; }
-
-    if(!Number.isFinite(v) || v < 0){
-      kmI.classList.add('danger');
-      setMsg('Informe um Km Saída válido (número inteiro ≥ 0).', false);
-      btn.disabled = true; return false;
-    }
-
-    if(Number.isFinite(KM_ATUAL) && v < KM_ATUAL){
-      kmI.classList.add('danger');
-      setMsg(`O Km Saída (${v.toLocaleString('pt-BR')}) é MENOR que o Km atual (${fmtKm(KM_ATUAL)}). Oriente o Segurança e corrija.`, false);
-      btn.disabled = true; return false;
-    }
-
-    kmI.classList.remove('danger');
-    setMsg('', true);
-    return true;
-  }
-
-  function validateForm(){
-    const veiculo = getSelectValue('veiculo');
-    const motorista = getSelectValue('motorista');
-    const seguranca = getSelectValue('seguranca');
-    const kmOK = validateKm();
-    const canSubmit = !!veiculo && !!motorista && !!seguranca && kmOK && !EM_CURSO && !inFlight;
-    document.getElementById('btnEnviar').disabled = !canSubmit;
-  }
-
-  async function submit(){
-    if(inFlight) return;
-    const veiculo   = getSelectValue('veiculo');
-    const motorista = getSelectValue('motorista');
-    const seguranca = getSelectValue('seguranca');
-    const destino   = (document.getElementById('destino').value || '').trim();
-
-    sanitizeKmInput();
-    const kmSaida = Number((document.getElementById('kmSaida').value || '').trim());
-
-    if(EM_CURSO){ setMsg('Veículo NÃO disponível: há uma saída em curso.', false); return; }
-    if(!veiculo || !motorista || !seguranca || !Number.isFinite(kmSaida)){ setMsg('Preencha Veículo, Motorista, Segurança e Km Saída.', false); return; }
-    if(!validateKm()) return;
-
-    inFlight = true;
-    ['veiculo','motorista','kmSaida','destino','seguranca','btnEnviar'].forEach(id=>{
-      const el = document.getElementById(id); if(el) el.disabled = true;
-    });
-    setMsg('Enviando...', true);
-
-    try{
-      const r = await apiPost('saida', { veiculo, motorista, seguranca, kmSaida, destino });
-      setMsg((r?.message || 'Saída registrada com sucesso!') + (r?.timestamp ? ` — ${r.timestamp}` : ''), true);
-      setTimeout(() => { location.href = './'; }, 1200);
-    }catch(e){
-      setMsg('Erro: ' + (e?.message || e), false);
-      ['veiculo','motorista','kmSaida','destino','seguranca'].forEach(id=>{
-        const el = document.getElementById(id); if(el) el.disabled = false;
-      });
-      validateForm();
-    }finally{
-      inFlight = false;
-    }
-  }
-
-  document.getElementById('btnEnviar').addEventListener('click', submit);
-  document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
-  document.getElementById('kmSaida').addEventListener('input', validateForm);
-  document.getElementById('motorista').addEventListener('change', validateForm);
-  document.getElementById('seguranca').addEventListener('change', validateForm);
-
-  document.addEventListener('keydown', (ev) => {
-    if(ev.key === 'Enter'){
-      const btn = document.getElementById('btnEnviar');
-      if(!btn.disabled){
-        ev.preventDefault();
-        submit();
-      }
-    }
-  });
-
-  window.addEventListener('load', loadLists);
+ // carrega em background para atualizar silenciosamente
+ window.addEventListener('load', loadLists);
 </script>
 </body>
 </html>

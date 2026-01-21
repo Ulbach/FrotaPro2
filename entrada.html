@@ -6,28 +6,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Registrar Entrada — Frota Pro</title>
 <style>
-  :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --text:#0b1020; --accent:#16a34a; --danger:#dc2626; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12) }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
-  .phone{width:420px;max-width:100%;min-height:90vh;margin:20px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
-  .wrap{padding:18px}
-  .top{display:flex;align-items:center;gap:10px}
-  .back{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;background:#fff}
-  h1{margin:0;font-size:20px;color:#0f172a}
-  .card{margin-top:14px;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
-  label{display:block;margin:12px 0 6px;font-weight:700}
-  select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
-  .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
-  .info{margin-top:6px;padding:10px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#0b1020;font-size:13px}
-  .kv{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .kv span{font-weight:800}
-  .hint-danger{color:var(--danger);font-size:12px;margin-top:6px;display:none}
-  .danger{border-color:var(--danger)!important}
-  .btn{margin-top:12px;width:100%;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .muted{color:#64748b;font-size:12px;margin-top:8px}
-  .msg{margin-top:12px;font-weight:700}
-  .ok{color:var(--accent)} .err{color:var(--danger)}
+ :root{ --bg:#f1f5f9; --card:#fff; --muted:#64748b; --text:#0b1020; --accent:#16a34a; --danger:#dc2626; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12) }
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+ .phone{width:420px;max-width:100%;min-height:90vh;margin:20px auto;background:var(--card);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
+ .wrap{padding:18px}
+ .top{display:flex;align-items:center;gap:10px}
+ .back{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;background:#fff}
+ h1{margin:0;font-size:20px;color:#0f172a}
+ .card{margin-top:14px;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 14px rgba(2,6,23,.06)}
+ label{display:block;margin:12px 0 6px;font-weight:700}
+ select,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+ .banner-warn{display:none;margin-bottom:8px;padding:10px;border:1px solid var(--danger);color:#7f1d1d;background:#fee2e2;border-radius:10px;font-size:13px;font-weight:700}
+ .info{margin-top:6px;padding:10px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#0b1020;font-size:13px}
+ .kv{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ .kv span{font-weight:800}
+ .hint-danger{color:var(--danger);font-size:12px;margin-top:6px;display:none}
+ .danger{border-color:var(--danger)!important}
+ .btn{margin-top:12px;width:100%;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
+ .btn:disabled{opacity:.6;cursor:not-allowed}
+ .muted{color:#64748b;font-size:12px;margin-top:8px}
+ .msg{margin-top:12px;font-weight:700}
+ .ok{color:var(--accent)} .err{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -35,9 +35,7 @@
   <div class="wrap">
     <div class="top">
       <div class="back" onclick="history.back()" title="Voltar" role="button" aria-label="Voltar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 6l-6 6 6 6" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <h1>Registrar Entrada</h1>
     </div>
@@ -52,7 +50,6 @@
         </select>
       </div>
 
-      <!-- Viewer km anterior -->
       <div id="viewer" class="info" style="display:none">
         <div class="kv"><span>Km anterior:</span><div id="kmAnteriorV">—</div></div>
       </div>
@@ -76,7 +73,7 @@
       <button id="btnEnviar" class="btn" disabled>Gravar Entrada</button>
 
       <div class="muted">
-        A entrada encerra a última saída “Em Curso” do veículo e grava <b>DataRetorno</b>, <b>KmRetorno</b> e <b>KmRodado</b>. Motorista e Segurança são carregados da última saída e podem ser alterados.
+        A entrada encerra a última saída “Em Curso” do veículo, grava <b>DataRetorno</b>, <b>KmRetorno</b> e <b>KmRodado</b>. Motorista e Segurança são carregados da última saída e podem ser alterados.
       </div>
       <div id="msg" class="msg" aria-live="polite"></div>
     </div>
@@ -92,8 +89,62 @@
   let KM_ANTERIOR = NaN;
   let EM_CURSO = false;
   let inFlight = false;
-  let L_MOTORISTAS = [];
-  let L_SEGURANCAS = [];
+
+  // ===== CACHE LOCAL =====
+  const BOOT_CACHE_KEY = 'fp_bootstrap_v1';
+  const BOOT_TTL_MS = 60 * 1000;
+
+  function loadBootCache(){
+    try{
+      const raw = localStorage.getItem(BOOT_CACHE_KEY);
+      if(!raw) return null;
+      const o = JSON.parse(raw);
+      if(!o || !o.when || !o.data) return null;
+      if(Date.now() - o.when > BOOT_TTL_MS) return null;
+      return o.data;
+    }catch(e){ return null; }
+  }
+  function fillSelect(el, list, placeholder){
+    el.innerHTML = '';
+    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder; el.appendChild(opt0);
+    (list||[]).forEach(v=>{ const o=document.createElement('option'); const t=String(v).trim(); o.value=t; o.textContent=t; el.appendChild(o); });
+  }
+  function ensureOption(el, val){
+    if(!val) return;
+    const v = String(val).trim();
+    const has = [...el.options].some(o => String(o.value) === v);
+    if(!has){
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v + ' (da última saída)';
+      el.insertBefore(o, el.firstChild.nextSibling);
+    }
+  }
+  function hydrateListsEntrada(lists){
+    // veículos em curso
+    const sel = document.getElementById('veiculo');
+    const emCurso = Array.isArray(lists.veiculosEmCurso)? lists.veiculosEmCurso : [];
+    if(emCurso.length===0){
+      sel.innerHTML = '<option value="">(Nenhum veículo em curso)</option>';
+    }else{
+      sel.innerHTML = '<option value="">Selecione o veículo (em curso)</option>' +
+        emCurso.map(v=>`<option value="${String(v).trim()}">${String(v).trim()}</option>`).join('');
+    }
+    fillSelect(document.getElementById('motorista'), lists.motoristas||[], 'Selecione o motorista');
+    fillSelect(document.getElementById('seguranca'), lists.segurancas||[], 'Selecione o segurança');
+  }
+
+  // aplica cache local instantâneo se existir
+  const cachedBoot = loadBootCache();
+  if (cachedBoot?.listsAvail) {
+    hydrateListsEntrada(cachedBoot.listsAvail);
+  }
+  // recebe atualizações da Home
+  if ('BroadcastChannel' in self) {
+    const bc = new BroadcastChannel('frota_pro_lists');
+    bc.onmessage = (ev) => {
+      if (ev?.data?.type === 'listsAvail') hydrateListsEntrada(ev.data.payload);
+    };
+  }
 
   // ===== HTTP helpers =====
   async function withTimeout(promise, ms, controller){
@@ -139,23 +190,6 @@
   function setMsg(text, ok){ const el=document.getElementById('msg'); el.textContent=text||''; el.className='msg '+(ok?'ok':'err'); }
   const fmtKm = n => (Number(n)||0).toLocaleString('pt-BR');
 
-  function fillSelect(el, list, placeholder){
-    el.innerHTML = '';
-    // 1ª opção: “selecione...” apenas quando NÃO temos um valor conhecido ainda
-    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder; el.appendChild(opt0);
-    (list||[]).forEach(v=>{ const o=document.createElement('option'); const t=String(v).trim(); o.value=t; o.textContent=t; el.appendChild(o); });
-  }
-  function ensureOption(el, val){
-    if(!val) return;
-    const v = String(val).trim();
-    const has = [...el.options].some(o => String(o.value) === v);
-    if(!has){
-      const o = document.createElement('option');
-      o.value = v; o.textContent = v + ' (da última saída)';
-      el.insertBefore(o, el.firstChild.nextSibling); // adiciona logo após a opção vazia
-    }
-  }
-
   function sanitizeKmInput(){
     const el = document.getElementById('kmRetorno');
     const raw = String(el.value||''); const onlyDigits = raw.replace(/[^\d]/g,'');
@@ -185,41 +219,10 @@
 
   // ===== PAGE LOGIC =====
   async function loadListsEntrada(){
-    setMsg('Carregando listas...', true);
-    document.getElementById('btnEnviar').disabled = true;
     try{
-      let L;
-      try{
-        L = await apiGet('listsAvail'); // preferencial (traz veiculosEmCurso)
-      }catch{
-        const base = await apiGet('lists');
-        L = { veiculosDisponiveis: [], veiculosEmCurso: base.veiculos||[], motoristas: base.motoristas||[], segurancas: base.segurancas||[] };
-      }
-      L_MOTORISTAS = Array.isArray(L.motoristas)? L.motoristas : [];
-      L_SEGURANCAS = Array.isArray(L.segurancas)? L.segurancas : [];
-
-      // popula apenas veículos em curso
-      const sel = document.getElementById('veiculo');
-      const emCurso = Array.isArray(L.veiculosEmCurso)? L.veiculosEmCurso : [];
-      if(emCurso.length===0){
-        sel.innerHTML = '<option value="">(Nenhum veículo em curso)</option>';
-      }else{
-        // suporte a pré-seleção via querystring ?veiculo=XYZ
-        const q = new URLSearchParams(location.search);
-        const pre = (q.get('veiculo')||'').trim();
-        sel.innerHTML = '';
-        const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='Selecione o veículo (em curso)'; sel.appendChild(opt0);
-        emCurso.forEach(v => { const o=document.createElement('option'); const t=String(v).trim(); o.value=t; o.textContent=t; sel.appendChild(o); });
-        if(pre){ sel.value = pre; }
-      }
-
-      // popula selects com listas-base (vamos pré-selecionar com os valores reais ao escolher o veículo)
-      fillSelect(document.getElementById('motorista'), L_MOTORISTAS, 'Selecione o motorista');
-      fillSelect(document.getElementById('seguranca'), L_SEGURANCAS, 'Selecione o segurança');
-
-      // foco
-      sel.focus();
-      setMsg('', true);
+      const L = await apiGet('listsAvail'); // busca fresco em background
+      hydrateListsEntrada(L);
+      document.getElementById('veiculo').focus();
     }catch(e){
       setMsg('Erro ao carregar listas: '+(e?.message||e), false);
     }
@@ -246,19 +249,31 @@
       if(!Number.isFinite(KM_ANTERIOR)) KM_ANTERIOR = NaN;
 
       if(EM_CURSO){
-        // 1) Preencher selects COM os dados atuais da última saída
+        // Preenche Motorista/Segurança com valores da última saída e pré-seleciona
         const mSel = document.getElementById('motorista');
         const sSel = document.getElementById('seguranca');
         const mAtual = (st?.motorista||'').trim();
         const sAtual = (st?.seguranca||'').trim();
 
-        // garante que os valores atuais existam na lista e pré-seleciona
-        ensureOption(mSel, mAtual);
-        ensureOption(sSel, sAtual);
-        if(mAtual) mSel.value = mAtual; else mSel.value='';
-        if(sAtual) sSel.value = sAtual; else sSel.value='';
+        // garante que existam no combo
+        (function ensureOption(el, val){
+          if(!val) return; const v=String(val).trim();
+          if(![...el.options].some(o=>String(o.value)===v)){
+            const o=document.createElement('option'); o.value=v; o.textContent=v+' (da última saída)';
+            el.insertBefore(o, el.firstChild.nextSibling);
+          }
+        })(mSel, mAtual);
+        (function ensureOption(el, val){
+          if(!val) return; const v=String(val).trim();
+          if(![...el.options].some(o=>String(o.value)===v)){
+            const o=document.createElement('option'); o.value=v; o.textContent=v+' (da última saída)';
+            el.insertBefore(o, el.firstChild.nextSibling);
+          }
+        })(sSel, sAtual);
 
-        // 2) Exibir Km anterior
+        mSel.value = mAtual || '';
+        sSel.value = sAtual || '';
+
         kmV.textContent = Number.isFinite(KM_ANTERIOR) ? fmtKm(KM_ANTERIOR) : 'não disponível';
         viewer.style.display = 'block';
         if(Number.isFinite(KM_ANTERIOR)){
@@ -292,10 +307,14 @@
     setMsg('Enviando...', true);
 
     try{
-      // Envia SEMPRE os nomes que estão selecionados — assim os dados ficam explícitos e auditáveis
+      // envia sempre os nomes selecionados
       const payload = { veiculo, kmRetorno, motorista, seguranca };
       const r = await apiPost('entrada', payload);
       setMsg(`${r?.message||'Entrada registrada com sucesso!'} — Km Rodado: ${r?.kmRodado??'-'} — Data: ${r?.dataRetorno??'-'}`, true);
+
+      // invalida cache local
+      try{ localStorage.removeItem('fp_bootstrap_v1'); }catch(e){}
+
       setTimeout(()=> location.href='./', 1200);
     }catch(e){
       setMsg('Erro: '+(e?.message||e), false);
@@ -306,12 +325,14 @@
     }
   }
 
+  // eventos
   document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
   document.getElementById('kmRetorno').addEventListener('input', validateForm);
   document.getElementById('motorista').addEventListener('change', validateForm);
   document.getElementById('seguranca').addEventListener('change', validateForm);
   document.getElementById('btnEnviar').addEventListener('click', submit);
 
+  // refresh silencioso em background
   window.addEventListener('load', loadListsEntrada);
 </script>
 </body>
