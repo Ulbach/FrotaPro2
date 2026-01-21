@@ -109,9 +109,11 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
 
 function renderRecentes(items){
-  const wrap = document.getElementById('listaRecentes'); wrap.innerHTML = '';
+  const wrap = document.getElementById('listaRecentes'); 
+  wrap.innerHTML = '';
   if(!items || !items.length){
-    wrap.innerHTML = '<div class="muted" style="padding:0 18px 16px">Sem movimentações ainda.</div>'; return;
+    wrap.innerHTML = '<div class="muted" style="padding:0 18px 16px">Sem movimentações ainda.</div>';
+    return;
   }
   for(const it of items){
     const sub = [String(it.motorista||'').trim(), String(it.seguranca||'').trim()].filter(Boolean).join(' • ');
@@ -140,68 +142,27 @@ function setOnline(ok){
 }
 </script>
 
-<!-- ============= ARRANQUE RÁPIDO: bootstrap + cache local + BroadcastChannel ============= -->
+<!-- ============= WARM START SEM BOOTSTRAP (usa route=home) ============= -->
 <script>
-const BOOT_CACHE_KEY = 'fp_bootstrap_v1';
-const BOOT_TTL_MS = 60 * 1000;
-
-function saveBootCache(obj){
-  try{ localStorage.setItem(BOOT_CACHE_KEY, JSON.stringify({ when: Date.now(), data: obj })); }catch(e){}
-}
-function loadBootCache(){
-  try{
-    const raw = localStorage.getItem(BOOT_CACHE_KEY);
-    if(!raw) return null;
-    const o = JSON.parse(raw);
-    if(!o || !o.when || !o.data) return null;
-    if(Date.now() - o.when > BOOT_TTL_MS) return null;
-    return o.data;
-  }catch(e){ return null; }
-}
-async function fetchBootstrap(){
-  const res = await fetch(`${API_URL}?route=bootstrap&t=${Date.now()}`, { method:'GET' });
-  if(!res.ok) throw new Error('Falha bootstrap');
+async function fetchHome(){
+  const res = await fetch(`${API_URL}?route=home&t=${Date.now()}`, { method:'GET' });
+  if(!res.ok) throw new Error('Falha home');
   return res.json();
 }
-
-// canal de compartilhamento para as outras páginas
-const bc = ('BroadcastChannel' in self) ? new BroadcastChannel('frota_pro_lists') : null;
-function publishListsAvail(lists){
-  if (bc && lists) bc.postMessage({ type:'listsAvail', payload: lists });
-}
-
 function applyHome(home){
   if(!home) return;
   document.getElementById('qtyVeiculos').textContent = home.totalVeiculos ?? 0;
   setOnline(true);
-  renderRecentes(home.recentes || []);
+  // garantir que sempre renderizamos os recentes:
+  renderRecentes(Array.isArray(home.recentes) ? home.recentes : []);
 }
-
 async function warmStart(){
-  // 1) cache local → render instantânea
-  const cached = loadBootCache();
-  if (cached?.home) {
-    applyHome(cached.home);
-    publishListsAvail(cached.listsAvail);
-  }
-
-  // 2) chama bootstrap em background
   try{
-    const fresh = await fetchBootstrap();
-    saveBootCache(fresh);
-    applyHome(fresh.home);
-    publishListsAvail(fresh.listsAvail);
+    const h = await fetchHome();
+    applyHome(h);
   }catch(e){
-    // fallback mínimo: tenta home direta se bootstrap falhar
-    try{
-      const res = await fetch(`${API_URL}?route=home&t=${Date.now()}`);
-      if(res.ok){
-        const h = await res.json();
-        applyHome(h);
-      }else{
-        setOnline(false);
-      }
-    }catch{ setOnline(false); }
+    console.warn('home falhou', e);
+    setOnline(false);
   }
 }
 
