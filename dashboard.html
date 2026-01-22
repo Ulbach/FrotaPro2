@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard — Frota Pro</title>
+<style>
+ :root{ --bg:#0f0f14; --card:#fff; --muted:#64748b; --text:#0b1020; --accent:#16a34a; --alert:#ef4444; --border:#e2e8f0; --shadow:0 16px 40px rgba(0,0,0,.12) }
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:#0b1020}
+ .wrap{max-width:980px;margin:22px auto;padding:0 12px}
+ .header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+ h1{margin:0 6px 0 0;color:#e6f6ff;letter-spacing:.18em}
+ .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.03em;
+  background:rgba(34,197,94,.12);color:#10b981;border:1px solid rgba(16,185,129,.35);backdrop-filter:blur(4px)}
+ .card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 6px 14px rgba(2,6,23,.06);padding:14px}
+ .grid{display:grid;gap:12px}
+ @media (min-width:760px){ .grid-2{grid-template-columns:1fr 1fr} .grid-3{grid-template-columns:1fr 1fr 1fr} }
+ .kpi{display:flex;flex-direction:column;gap:6px}
+ .kpi .v{font-size:28px;font-weight:900}
+ .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+ select{padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1}
+ .muted{color:#64748b}
+ a.btn{display:inline-flex;gap:8px;align-items:center;background:#16a34a;border:1px solid #0e9f6e;color:#fff;text-decoration:none;padding:8px 12px;border-radius:12px;font-weight:800}
+ canvas{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="pill">DASHBOARD</div>
+    <h1>FROTA PRO</h1>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="row">
+      <label for="selMes" class="muted" style="font-weight:700">Mês</label>
+      <select id="selMes">
+        <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option><option value="4">Abr</option>
+        <option value="5">Mai</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option>
+        <option value="9">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+      </select>
+      <label for="selAno" class="muted" style="font-weight:700">Ano</label>
+      <select id="selAno"></select>
+      <a id="btnAtualizar" class="btn" href="javascript:void(0)">Atualizar</a>
+      <a class="btn" href="./" style="background:#0ea5e9;border-color:#0284c7">Voltar ao App</a>
+      <div id="status" class="muted"></div>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-bottom:12px">
+    <div class="card kpi"><div class="muted" style="font-weight:800;letter-spacing:.1em">VIAGENS</div><div id="kpiTrips" class="v">0</div></div>
+    <div class="card kpi"><div class="muted" style="font-weight:800;letter-spacing:.1em">KM RODADOS</div><div id="kpiKm" class="v">0</div></div>
+    <div class="card kpi"><div class="muted" style="font-weight:800;letter-spacing:.1em">MÉDIA KM/VIAGEM</div><div id="kpiAvg" class="v">0</div></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom:12px">
+    <div class="card"><canvas id="chartTripsByVehicle" height="180"></canvas></div>
+    <div class="card"><canvas id="chartKmByVehicle" height="180"></canvas></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><canvas id="chartByDay" height="220"></canvas></div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="muted" style="font-weight:800;letter-spacing:.1em;margin-bottom:8px">DETALHE POR VEÍCULO</div>
+    <div id="tbl" class="muted"></div>
+  </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbwE8F061OhUN5lTom2nZ0W_Vm5LX2wAWhPE4rtd6umbaxcIdmjaAzEtlf-wOHVpgDl-4g/exec';
+
+// ===== util =====
+const fmt = new Intl.NumberFormat('pt-BR');
+function qs(id){ return document.getElementById(id); }
+function setStatus(msg){ qs('status').textContent = msg || ''; }
+
+// ===== charts =====
+let cTripsByVehicle, cKmByVehicle, cByDay;
+
+function destroyCharts(){
+  [cTripsByVehicle, cKmByVehicle, cByDay].forEach(c => { if(c) { c.destroy(); } });
+  cTripsByVehicle = cKmByVehicle = cByDay = null;
+}
+
+function drawCharts(metrics){
+  const tripsTop = metrics.topVehiclesByTrips || [];
+  const kmTop    = metrics.topVehiclesByKm || [];
+  const byDay    = metrics.byDay || [];
+
+  // Top veículos por viagens (barras horizontais)
+  cTripsByVehicle = new Chart(qs('chartTripsByVehicle'), {
+    type:'bar',
+    data:{
